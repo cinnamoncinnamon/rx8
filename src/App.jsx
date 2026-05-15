@@ -1908,6 +1908,8 @@ function AviatorGame({ balance, setBalance, onBack }) {
     1.28, 77.76, 1.76, 17.13, 7.33, 11.42, 1.05, 3.24, 2.14, 1.42,
   ]);
   const [activeTab, setActiveTab] = useState("allbets");
+  const [betTab1, setBetTab1] = useState("bet");
+  const [betTab2, setBetTab2] = useState("bet");
   const [allBets, setAllBets] = useState(() => genBots());
   const [crashedMult, setCrashedMult] = useState(null);
 
@@ -2054,64 +2056,144 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    // shadow glow
-    ctx.shadowColor = "#FF4444";
-    ctx.shadowBlur = 20;
-    // fuselage
-    ctx.fillStyle = "#CC1111";
-    ctx.beginPath();
-    ctx.ellipse(-30, 0, 38, 11, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // nose cone
-    ctx.fillStyle = "#AA0000";
-    ctx.beginPath();
-    ctx.moveTo(8, 0);
-    ctx.bezierCurveTo(14, -5, 22, -3, 26, 0);
-    ctx.bezierCurveTo(22, 3, 14, 5, 8, 0);
-    ctx.fill();
-    // cockpit
-    ctx.fillStyle = "#334466";
-    ctx.beginPath();
-    ctx.ellipse(2, -4, 7, 4, 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#88AADD";
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.arc(2, -5, 5, 0, Math.PI);
-    ctx.stroke();
-    // main wing
-    ctx.fillStyle = "#AA0D0D";
-    ctx.beginPath();
-    ctx.moveTo(-10, 0);
-    ctx.lineTo(-22, -20);
-    ctx.lineTo(2, -22);
-    ctx.lineTo(8, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#FF5555";
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-    // tail fin
-    ctx.fillStyle = "#881010";
-    ctx.beginPath();
-    ctx.moveTo(-26, 0);
-    ctx.lineTo(-30, -12);
-    ctx.lineTo(-20, -8);
-    ctx.lineTo(-20, 0);
-    ctx.closePath();
-    ctx.fill();
-    // engine fire
-    ctx.shadowColor = "#FF6600";
-    ctx.shadowBlur = 12;
-    const fireLen = 12 + Math.random() * 8;
-    const fireGrad = ctx.createLinearGradient(-30 - fireLen, 0, -30, 0);
+    const sc = 1.3;
+    ctx.scale(sc, sc);
+
+    // Engine fire
+    ctx.shadowColor = "#FF4400";
+    ctx.shadowBlur = 28;
+    const fireLen = 18 + Math.random() * 14;
+    const fireGrad = ctx.createLinearGradient(-50 - fireLen, 0, -38, 0);
     fireGrad.addColorStop(0, "rgba(255,220,0,0)");
-    fireGrad.addColorStop(0.4, "rgba(255,160,0,0.9)");
-    fireGrad.addColorStop(1, "rgba(255,80,0,0.95)");
+    fireGrad.addColorStop(0.3, "rgba(255,180,0,0.85)");
+    fireGrad.addColorStop(0.7, "rgba(255,80,0,0.95)");
+    fireGrad.addColorStop(1, "rgba(255,40,0,0.6)");
     ctx.fillStyle = fireGrad;
     ctx.beginPath();
-    ctx.ellipse(-30 - fireLen / 2, 0, fireLen / 2, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(-44 - fireLen / 2, 2, fireLen / 2, 4 + Math.random() * 3, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = "rgba(255,200,50,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(-44 - fireLen * 0.7, 0, fireLen * 0.3, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Main fuselage
+    ctx.fillStyle = "#C8000A";
+    ctx.beginPath();
+    ctx.moveTo(28, 0);
+    ctx.bezierCurveTo(20, -8, 0, -10, -20, -8);
+    ctx.bezierCurveTo(-36, -6, -44, -3, -46, 2);
+    ctx.bezierCurveTo(-44, 7, -36, 8, -20, 8);
+    ctx.bezierCurveTo(0, 10, 20, 7, 28, 0);
+    ctx.fill();
+
+    // Fuselage shine
+    ctx.fillStyle = "rgba(255,80,80,0.25)";
+    ctx.beginPath();
+    ctx.ellipse(-5, -5, 18, 4, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nose
+    ctx.fillStyle = "#A00008";
+    ctx.beginPath();
+    ctx.moveTo(22, 0);
+    ctx.bezierCurveTo(26, -4, 34, -2, 38, 0);
+    ctx.bezierCurveTo(34, 2, 26, 4, 22, 0);
+    ctx.fill();
+
+    // Main wing
+    ctx.fillStyle = "#B8000A";
+    ctx.beginPath();
+    ctx.moveTo(5, -2);
+    ctx.lineTo(-8, -26);
+    ctx.lineTo(-20, -28);
+    ctx.lineTo(-24, -22);
+    ctx.lineTo(-18, -10);
+    ctx.lineTo(10, -2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,100,100,0.4)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(4, -4);
+    ctx.lineTo(-10, -24);
+    ctx.stroke();
+
+    // Lower wing stub
+    ctx.fillStyle = "#900008";
+    ctx.beginPath();
+    ctx.moveTo(5, 2);
+    ctx.lineTo(-8, 16);
+    ctx.lineTo(-18, 12);
+    ctx.lineTo(-14, 6);
+    ctx.lineTo(10, 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tail vertical fin
+    ctx.fillStyle = "#A00008";
+    ctx.beginPath();
+    ctx.moveTo(-34, -2);
+    ctx.lineTo(-42, -18);
+    ctx.lineTo(-32, -14);
+    ctx.lineTo(-28, -2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tail horizontal stabilizer
+    ctx.fillStyle = "#B0000A";
+    ctx.beginPath();
+    ctx.moveTo(-32, 2);
+    ctx.lineTo(-44, 10);
+    ctx.lineTo(-42, 4);
+    ctx.lineTo(-30, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cockpit
+    ctx.fillStyle = "#1A2A4A";
+    ctx.beginPath();
+    ctx.ellipse(8, -5, 9, 5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(150,200,255,0.55)";
+    ctx.beginPath();
+    ctx.ellipse(10, -7, 5, 2.5, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#4488CC";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.ellipse(8, -5, 9, 5, 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Propeller hub
+    ctx.fillStyle = "#880008";
+    ctx.beginPath();
+    ctx.arc(38, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spinning propeller blades
+    const propAngle = (Date.now() / 55) % (Math.PI * 2);
+    ctx.save();
+    ctx.translate(38, 0);
+    ctx.rotate(propAngle);
+    ctx.fillStyle = "rgba(180,0,10,0.7)";
+    for (let i = 0; i < 3; i++) {
+      ctx.save();
+      ctx.rotate((i * Math.PI * 2) / 3);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 3, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // Propeller blur disc
+    ctx.fillStyle = "rgba(200,50,50,0.12)";
+    ctx.beginPath();
+    ctx.arc(38, 0, 15, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 
@@ -2278,8 +2360,9 @@ function AviatorGame({ balance, setBalance, onBack }) {
     cashM,
     autoCash,
     setAutoCash,
+    tab,
+    setTab,
   }) => {
-    const [tab, setTab] = useState("bet");
     const canBet = !placed && phase === "waiting" && balance >= amt;
     const canCash = placed && !cashed && phase === "flying";
     const btnBg = canBet
@@ -2866,6 +2949,8 @@ function AviatorGame({ balance, setBalance, onBack }) {
           cashM={cashMult}
           autoCash={autoCash1}
           setAutoCash={setAutoCash1}
+          tab={betTab1}
+          setTab={setBetTab1}
         />
         <BetPanel
           slot={2}
@@ -2877,6 +2962,8 @@ function AviatorGame({ balance, setBalance, onBack }) {
           cashM={cashMult2}
           autoCash={autoCash2}
           setAutoCash={setAutoCash2}
+          tab={betTab2}
+          setTab={setBetTab2}
         />
       </div>
 
