@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-
+ 
 const NUM_COLORS = {
   0: ["red", "violet"],
   1: ["green"],
@@ -37,7 +37,7 @@ const G = {
   sub: "#888",
 };
 const gradient = `linear-gradient(135deg,#EF5350,#FF8A80)`;
-
+ 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -55,7 +55,7 @@ input:focus{outline:none;}
 button:active{opacity:.85;}
 ::-webkit-scrollbar{width:0;height:0;}
 `;
-
+ 
 /* ── BALL ── */
 function Ball({ number, size = 44, selected = false, onClick }) {
   const colors = NUM_COLORS[number];
@@ -144,7 +144,7 @@ function Ball({ number, size = 44, selected = false, onClick }) {
     </div>
   );
 }
-
+ 
 /* ── LOGIN ── */
 function LoginScreen({ onLogin, onGotoRegister }) {
   const [method, setMethod] = useState("mobile");
@@ -380,7 +380,7 @@ function LoginScreen({ onLogin, onGotoRegister }) {
     </div>
   );
 }
-
+ 
 /* ── REGISTER ── */
 function RegisterScreen({ onRegister, onBack }) {
   const [method, setMethod] = useState("mobile");
@@ -598,7 +598,7 @@ function RegisterScreen({ onRegister, onBack }) {
     </div>
   );
 }
-
+ 
 /* ── DEPOSIT SETUP ── */
 function DepositSetup({ contact, onDone }) {
   const [mainNum, setMainNum] = useState("");
@@ -769,7 +769,7 @@ function DepositSetup({ contact, onDone }) {
     </div>
   );
 }
-
+ 
 /* ── WINGO ── */
 const MODES = [
   { label: "30s", seconds: 30 },
@@ -777,7 +777,7 @@ const MODES = [
   { label: "3 Min", seconds: 180 },
   { label: "5 Min", seconds: 300 },
 ];
-
+ 
 function BetModal({
   type,
   label,
@@ -965,7 +965,7 @@ function BetModal({
     </div>
   );
 }
-
+ 
 function WinGoGame({ balance, setBalance, onBack }) {
   const [modeIdx, setModeIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -981,7 +981,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
   const [isLocked, setIsLocked] = useState(false);
   const timerRef = useRef(null);
   const modeSeconds = MODES[modeIdx].seconds;
-
+ 
   const resolveRound = useCallback(() => {
     setPendingBets((bets) => {
       const winNum = Math.floor(Math.random() * 10);
@@ -1032,7 +1032,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
       return [];
     });
   }, [currentPeriod]);
-
+ 
   useEffect(() => {
     setTimeLeft(modeSeconds);
     clearInterval(timerRef.current);
@@ -1047,19 +1047,19 @@ function WinGoGame({ balance, setBalance, onBack }) {
     }, 1000);
     return () => clearInterval(timerRef.current);
   }, [modeIdx, modeSeconds]);
-
+ 
   useEffect(() => {
     setIsLocked(timeLeft <= 5);
   }, [timeLeft]);
-
+ 
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
-
+ 
   const openModal = (type, label, color, value) => {
     if (isLocked) return;
     setModal({ type, label, color, value });
   };
-
+ 
   return (
     <div
       style={{
@@ -1147,7 +1147,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           ))}
         </div>
       </div>
-
+ 
       {/* Game info panel */}
       <div
         style={{
@@ -1235,7 +1235,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       </div>
-
+ 
       {/* Bet area */}
       <div
         style={{
@@ -1503,7 +1503,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           </div>
         )}
       </div>
-
+ 
       {/* Tabs */}
       <div
         style={{
@@ -1788,7 +1788,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
         )}
       </div>
       <div style={{ height: 24, background: "#fff", margin: "0 10px" }} />
-
+ 
       {modal && (
         <BetModal
           {...modal}
@@ -1804,7 +1804,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           onClose={() => setModal(null)}
         />
       )}
-
+ 
       {resultFlash && (
         <div
           style={{
@@ -1846,7 +1846,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
     </div>
   );
 }
-
+ 
 /* ══════════════════════════════════════════════════════════════
    AVIATOR GAME — Canvas-based smooth curve
 ══════════════════════════════════════════════════════════════ */
@@ -1881,7 +1881,7 @@ function genBots() {
     };
   });
 }
-
+ 
 function AviatorGame({ balance, setBalance, onBack }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -1890,7 +1890,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
   const phaseRef = useRef("waiting");
   const multRef = useRef(1.0);
   const pointsRef = useRef([]); // stores {t,x,y} for drawn curve
-
+ 
   const [phase, setPhase] = useState("waiting");
   const [mult, setMult] = useState(1.0);
   const [countdown, setCountdown] = useState(5);
@@ -1912,7 +1912,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
   const [betTab2, setBetTab2] = useState("bet");
   const [allBets, setAllBets] = useState(() => genBots());
   const [crashedMult, setCrashedMult] = useState(null);
-
+ 
   // refs for bet state accessible in RAF
   const betPlacedRef = useRef(false);
   const betPlaced2Ref = useRef(false);
@@ -1930,7 +1930,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
   useEffect(() => {
     betAmt2Ref.current = betAmt2;
   }, [betAmt2]);
-
+ 
   const cashedOutRef = useRef(false);
   const cashedOut2Ref = useRef(false);
   const autoCash1Ref = useRef(0);
@@ -1947,21 +1947,21 @@ function AviatorGame({ balance, setBalance, onBack }) {
   useEffect(() => {
     autoCash2Ref.current = autoCash2;
   }, [autoCash2]);
-
+ 
   const mc = (m) =>
     m < 2 ? "#FFD600" : m < 5 ? "#4ADE80" : m < 10 ? "#38BDF8" : "#F472B6";
-
+ 
   // ── CANVAS DRAW ──────────────────────────────────────────────
   const drawFrame = useCallback((canvas, pts, currentMult, ph, cd) => {
     const ctx = canvas.getContext("2d");
     const W = canvas.width,
       H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-
+ 
     // Background: dark with radial rays
     ctx.fillStyle = "#0D0D1A";
     ctx.fillRect(0, 0, W, H);
-
+ 
     // Sunray lines from bottom-left
     const ox = W * 0.05,
       oy = H * 0.98;
@@ -1976,7 +1976,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
-
+ 
     // Axis dots
     const dotCount = 12;
     for (let i = 0; i < dotCount; i++) {
@@ -1992,7 +1992,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.fillStyle = "rgba(255,255,255,0.15)";
       ctx.fill();
     }
-
+ 
     if (ph === "waiting" || ph === "crashed") {
       // During waiting / crashed: just show the text overlay
       if (ph === "crashed" && pts.length > 1) {
@@ -2001,17 +2001,17 @@ function AviatorGame({ balance, setBalance, onBack }) {
       }
       return;
     }
-
+ 
     if (pts.length < 2) return;
     drawCurve(ctx, pts, W, H, "#EF4444");
-
+ 
     // Plane at tip
     const last = pts[pts.length - 1];
     const prev = pts[pts.length - 2];
     const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
     drawPlane(ctx, last.x, last.y, angle, currentMult);
   }, []);
-
+ 
   function drawCurve(ctx, pts, W, H, color) {
     if (pts.length < 2) return;
     // Glow layer
@@ -2027,7 +2027,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.restore();
-
+ 
     // Filled area under curve
     ctx.save();
     ctx.beginPath();
@@ -2042,7 +2042,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.restore();
-
+ 
     // Bright core line
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -2051,14 +2051,14 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
-
+ 
   function drawPlane(ctx, x, y, angle, m) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
     const sc = 1.3;
     ctx.scale(sc, sc);
-
+ 
     // Engine fire
     ctx.shadowColor = "#FF4400";
     ctx.shadowBlur = 28;
@@ -2077,7 +2077,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.ellipse(-44 - fireLen * 0.7, 0, fireLen * 0.3, 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
-
+ 
     // Main fuselage
     ctx.fillStyle = "#C8000A";
     ctx.beginPath();
@@ -2087,13 +2087,13 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.bezierCurveTo(-44, 7, -36, 8, -20, 8);
     ctx.bezierCurveTo(0, 10, 20, 7, 28, 0);
     ctx.fill();
-
+ 
     // Fuselage shine
     ctx.fillStyle = "rgba(255,80,80,0.25)";
     ctx.beginPath();
     ctx.ellipse(-5, -5, 18, 4, -0.2, 0, Math.PI * 2);
     ctx.fill();
-
+ 
     // Nose
     ctx.fillStyle = "#A00008";
     ctx.beginPath();
@@ -2101,7 +2101,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.bezierCurveTo(26, -4, 34, -2, 38, 0);
     ctx.bezierCurveTo(34, 2, 26, 4, 22, 0);
     ctx.fill();
-
+ 
     // Main wing
     ctx.fillStyle = "#B8000A";
     ctx.beginPath();
@@ -2119,7 +2119,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.moveTo(4, -4);
     ctx.lineTo(-10, -24);
     ctx.stroke();
-
+ 
     // Lower wing stub
     ctx.fillStyle = "#900008";
     ctx.beginPath();
@@ -2130,7 +2130,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(10, 2);
     ctx.closePath();
     ctx.fill();
-
+ 
     // Tail vertical fin
     ctx.fillStyle = "#A00008";
     ctx.beginPath();
@@ -2140,7 +2140,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(-28, -2);
     ctx.closePath();
     ctx.fill();
-
+ 
     // Tail horizontal stabilizer
     ctx.fillStyle = "#B0000A";
     ctx.beginPath();
@@ -2150,7 +2150,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(-30, 4);
     ctx.closePath();
     ctx.fill();
-
+ 
     // Cockpit
     ctx.fillStyle = "#1A2A4A";
     ctx.beginPath();
@@ -2165,13 +2165,13 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.beginPath();
     ctx.ellipse(8, -5, 9, 5, 0.3, 0, Math.PI * 2);
     ctx.stroke();
-
+ 
     // Propeller hub
     ctx.fillStyle = "#880008";
     ctx.beginPath();
     ctx.arc(38, 0, 4, 0, Math.PI * 2);
     ctx.fill();
-
+ 
     // Spinning propeller blades
     const propAngle = (Date.now() / 55) % (Math.PI * 2);
     ctx.save();
@@ -2187,16 +2187,16 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.restore();
     }
     ctx.restore();
-
+ 
     // Propeller blur disc
     ctx.fillStyle = "rgba(200,50,50,0.12)";
     ctx.beginPath();
     ctx.arc(38, 0, 15, 0, Math.PI * 2);
     ctx.fill();
-
+ 
     ctx.restore();
   }
-
+ 
   // ── GAME LOOP ────────────────────────────────────────────────
   const startRound = useCallback(() => {
     // Generate crash point
@@ -2212,14 +2212,14 @@ function AviatorGame({ balance, setBalance, onBack }) {
     multRef.current = 1.0;
     pointsRef.current = [];
     startRef.current = performance.now();
-
+ 
     // deduct bets
     if (betPlacedRef.current) setBalance((b) => b - betAmtRef.current);
     if (betPlaced2Ref.current) setBalance((b) => b - betAmt2Ref.current);
-
+ 
     setPhase("flying");
     setMult(1.0);
-
+ 
     const canvas = canvasRef.current;
     const W = canvas ? canvas.width : 460,
       H = canvas ? canvas.height : 240;
@@ -2227,14 +2227,14 @@ function AviatorGame({ balance, setBalance, onBack }) {
       PAD_B = H - 18,
       PAD_T = 18,
       PAD_R = W - 14;
-
+ 
     const tick = (now) => {
       if (phaseRef.current !== "flying") return;
       const elapsed = (now - startRef.current) / 1000;
       const m = parseFloat(Math.pow(Math.E, elapsed * 0.09).toFixed(3));
       multRef.current = m;
       setMult(parseFloat(m.toFixed(2)));
-
+ 
       // Map multiplier to canvas coords using exponential curve
       // t goes 0→1 as mult goes 1→crashPoint
       const maxM = Math.max(crashRef.current * 1.1, 4);
@@ -2243,15 +2243,15 @@ function AviatorGame({ balance, setBalance, onBack }) {
       const cx = PAD_L + t * (PAD_R - PAD_L);
       // y: exponential bottom→top
       const cy = PAD_B - Math.pow(t, 0.7) * (PAD_B - PAD_T);
-
+ 
       const pts = pointsRef.current;
       const last = pts[pts.length - 1];
       if (!last || Math.hypot(cx - last.x, cy - last.y) > 3) {
         pointsRef.current = [...pts.slice(-120), { x: cx, y: cy }];
       }
-
+ 
       if (canvas) drawFrame(canvas, pointsRef.current, m, "flying", 0);
-
+ 
       // Auto cash out
       if (
         autoCash1Ref.current > 0 &&
@@ -2275,7 +2275,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
         cashedOut2Ref.current = true;
         setCashMult2(parseFloat(m.toFixed(2)));
       }
-
+ 
       if (m >= crashRef.current) {
         // CRASH
         phaseRef.current = "crashed";
@@ -2306,7 +2306,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     };
     animRef.current = requestAnimationFrame(tick);
   }, [setBalance]);
-
+ 
   // Countdown timer
   useEffect(() => {
     if (phase !== "waiting") return;
@@ -2317,21 +2317,21 @@ function AviatorGame({ balance, setBalance, onBack }) {
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [phase, countdown, startRound]);
-
+ 
   // Redraw on waiting phase (blank + dots)
   useEffect(() => {
     if (phase === "waiting" && canvasRef.current) {
       drawFrame(canvasRef.current, [], "1.00", "waiting", countdown);
     }
   }, [phase, countdown]);
-
+ 
   useEffect(
     () => () => {
       cancelAnimationFrame(animRef.current);
     },
     []
   );
-
+ 
   const cashOut = (slot) => {
     if (phaseRef.current !== "flying") return;
     const m = multRef.current;
@@ -2348,7 +2348,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       setCashMult2(parseFloat(m.toFixed(2)));
     }
   };
-
+ 
   // ── BET PANEL ────────────────────────────────────────────────
   const BetPanel = ({
     slot,
@@ -2668,7 +2668,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       </div>
     );
   };
-
+ 
   const displayMult = phase === "waiting" ? 1.0 : mult;
   const multColor =
     displayMult < 2
@@ -2678,7 +2678,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       : displayMult < 10
       ? "#38BDF8"
       : "#F472B6";
-
+ 
   return (
     <div
       style={{
@@ -2741,7 +2741,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
           ৳{balance.toFixed(2)}
         </span>
       </div>
-
+ 
       {/* History pills */}
       <div
         style={{
@@ -2775,7 +2775,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
           </div>
         ))}
       </div>
-
+ 
       {/* Canvas area */}
       <div
         style={{
@@ -2793,7 +2793,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
           height={240}
           style={{ width: "100%", height: "auto", display: "block" }}
         />
-
+ 
         {/* Overlay: multiplier display */}
         <div
           style={{
@@ -2909,7 +2909,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
             </div>
           )}
         </div>
-
+ 
         {/* Live players */}
         {phase === "flying" && (
           <div
@@ -2936,7 +2936,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
           </div>
         )}
       </div>
-
+ 
       {/* Bet panels */}
       <div style={{ padding: "8px 8px 6px", display: "flex", gap: 8 }}>
         <BetPanel
@@ -2966,7 +2966,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
           setTab={setBetTab2}
         />
       </div>
-
+ 
       {/* All bets table */}
       <div
         style={{
@@ -3088,7 +3088,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     </div>
   );
 }
-
+ 
 /* ── HOME ── */
 const GAMES = [
   {
@@ -3137,7 +3137,7 @@ const GAMES = [
     bg: "linear-gradient(135deg,#0F2027,#203A43,#2C5364)",
   },
 ];
-
+ 
 function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
   const [activeNav, setActiveNav] = useState("home");
   return (
@@ -3390,7 +3390,7 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
     </div>
   );
 }
-
+ 
 /* ── PROFILE ── */
 const AVATARS = [
   "🎮",
@@ -3860,7 +3860,7 @@ function ProfileScreen({ user, balance, accounts, onBack }) {
     </div>
   );
 }
-
+ 
 /* ── WALLET ── */
 function WalletScreen({ balance, setBalance, accounts, onBack }) {
   const [tab, setTab] = useState("deposit");
@@ -4105,7 +4105,7 @@ function WalletScreen({ balance, setBalance, accounts, onBack }) {
     </div>
   );
 }
-
+ 
 /* ── SUPPORT CHAT ── */
 const QUICK = [
   "How to deposit?",
@@ -4491,11 +4491,11 @@ function SupportChat({ onClose, user }) {
     </div>
   );
 }
-
+ 
 /* ── TRADING SIMULATOR ── */
 const CANDLE_DURATION = 30;
 const ENTRY_WINDOW    = 10;
-
+ 
 const TRADE_MARKETS = [
   { id:"USDJPY", label:"USD/JPY", base:154.5,  vol:0.00035, decimals:2, prefix:"" },
   { id:"EURUSD", label:"EUR/USD", base:1.0845,  vol:0.00018, decimals:4, prefix:"" },
@@ -4503,7 +4503,7 @@ const TRADE_MARKETS = [
   { id:"XAUUSD", label:"XAU/USD", base:2345.0,  vol:0.00025, decimals:1, prefix:"$" },
   { id:"BTCUSD", label:"BTC/USD", base:43250.0, vol:0.0013,  decimals:2, prefix:"$" },
 ];
-
+ 
 // ── Sound Engine ─────────────────────────────────────────────
 const AudioEngine = (() => {
   let ctx = null;
@@ -4535,11 +4535,11 @@ const AudioEngine = (() => {
     uiClick: function() { tone(800,"sine",0.05,0.07); },
   };
 })();
-
+ 
 // ── Candle Engine ─────────────────────────────────────────────
 function useCandleEngine(market) {
   const store = useRef({ candles:[], live:0, openRef:0 });
-
+ 
   const seed = useCallback(function(m) {
     let p = m.base * (0.99 + Math.random() * 0.02);
     const arr = [];
@@ -4556,7 +4556,7 @@ function useCandleEngine(market) {
     store.current.live    = p;
     store.current.openRef = p;
   }, []);
-
+ 
   const tick = useCallback(function(m) {
     const s    = store.current;
     const prev = s.live;
@@ -4568,7 +4568,7 @@ function useCandleEngine(market) {
     if (last) { last.c = next; last.hi = Math.max(last.hi, next); last.lo = Math.min(last.lo, next); }
     return next;
   }, []);
-
+ 
   const closeCandle = useCallback(function() {
     const s   = store.current;
     const arr = s.candles;
@@ -4579,120 +4579,89 @@ function useCandleEngine(market) {
     if (arr.length > 120) arr.shift();
     s.openRef = cl;
   }, []);
-
+ 
   return { store, seed, tick, closeCandle };
 }
-
+ 
 // ── Loading Screen ────────────────────────────────────────────
 function TradingLoader({ onDone }) {
-  const canvasRef = useRef(null);
-  const rafRef    = useRef(null);
-  const startRef  = useRef(Date.now());
-
+  const [progress, setProgress] = useState(0);
+  const [dots, setDots]         = useState("");
+ 
   useEffect(function() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-
-    const resize = function() {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width  = canvas.offsetWidth  * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-      ctx.scale(dpr, dpr);
+    const start = Date.now();
+    const DURATION = 1800;
+    let raf;
+    const step = function() {
+      const p = Math.min((Date.now() - start) / DURATION, 1);
+      setProgress(p);
+      if (p < 1) { raf = requestAnimationFrame(step); }
+      else { setTimeout(onDone, 200); }
     };
-    resize();
-
-    const pts = [];
-    let y = 120, x = 0;
-    while (x < 400) { y += (Math.random() - 0.46) * 12; y = Math.max(60, Math.min(170, y)); pts.push({x, y}); x += 6 + Math.random() * 4; }
-
-    const draw = function() {
-      const W = canvas.offsetWidth || 360, H = canvas.offsetHeight || 600;
-      const elapsed  = (Date.now() - startRef.current) / 1000;
-      const progress = Math.min(elapsed / 2.2, 1);
-      ctx.clearRect(0, 0, W, H);
-
-      // BG
-      ctx.fillStyle = "#050508"; ctx.fillRect(0, 0, W, H);
-
-      // Glow
-      const grd = ctx.createRadialGradient(W/2, H*0.45, 0, W/2, H*0.45, W*0.55);
-      grd.addColorStop(0, "rgba(0,200,100," + (0.06 + 0.04 * Math.sin(elapsed * 1.2)) + ")");
-      grd.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
-
-      // Chart line
-      const drawPts = Math.floor(progress * pts.length);
-      if (drawPts > 1) {
-        const slice = pts.slice(0, drawPts);
-        const ox = W/2 - 190, oy = H * 0.38;
-        ctx.save(); ctx.shadowColor = "#00cc88"; ctx.shadowBlur = 18;
-        ctx.beginPath();
-        slice.forEach(function(p, i) { i === 0 ? ctx.moveTo(ox+p.x, oy+p.y) : ctx.lineTo(ox+p.x, oy+p.y); });
-        ctx.strokeStyle = "#00cc88"; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.stroke();
-        ctx.restore();
-
-        // Fill
-        ctx.save(); ctx.beginPath();
-        slice.forEach(function(p, i) { i === 0 ? ctx.moveTo(ox+p.x, oy+p.y) : ctx.lineTo(ox+p.x, oy+p.y); });
-        const ep = slice[slice.length-1];
-        ctx.lineTo(ox+ep.x, oy+200); ctx.lineTo(ox, oy+200); ctx.closePath();
-        const fill = ctx.createLinearGradient(0, oy, 0, oy+200);
-        fill.addColorStop(0, "rgba(0,200,136,0.18)"); fill.addColorStop(1, "rgba(0,200,136,0)");
-        ctx.fillStyle = fill; ctx.fill(); ctx.restore();
-
-        // Dot
-        ctx.save(); ctx.shadowColor = "#00cc88"; ctx.shadowBlur = 20;
-        ctx.beginPath(); ctx.arc(ox+ep.x, oy+ep.y, 4, 0, Math.PI*2);
-        ctx.fillStyle = "#00cc88"; ctx.fill(); ctx.restore();
-      }
-
-      // Title
-      ctx.save();
-      ctx.globalAlpha = Math.min(progress * 2, 1);
-      ctx.font = "bold 26px monospace"; ctx.textAlign = "center";
-      ctx.fillStyle = "#00cc88"; ctx.shadowColor = "#00cc88"; ctx.shadowBlur = 20;
-      ctx.fillText("FX TRADER", W/2, H * 0.18); ctx.restore();
-
-      ctx.save();
-      ctx.globalAlpha = Math.min(Math.max(progress * 3 - 1, 0), 1);
-      ctx.font = "11px sans-serif"; ctx.textAlign = "center";
-      ctx.fillStyle = "rgba(0,200,136,0.5)";
-      ctx.fillText("HGNICE TRADING PLATFORM", W/2, H * 0.24); ctx.restore();
-
-      // Progress bar
-      const barW = W * 0.6, barX = (W - barW) / 2, barY = H * 0.88;
-      ctx.fillStyle = "rgba(255,255,255,0.07)";
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(barX, barY, barW, 3, 2);
-      else ctx.rect(barX, barY, barW, 3);
-      ctx.fill();
-      ctx.save(); ctx.shadowColor = "#00cc88"; ctx.shadowBlur = 10;
-      ctx.fillStyle = "#00cc88";
-      ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(barX, barY, barW * progress, 3, 2);
-      else ctx.rect(barX, barY, barW * progress, 3);
-      ctx.fill(); ctx.restore();
-
-      // Loading text
-      const dots = ".".repeat(Math.floor(elapsed * 2) % 4);
-      ctx.globalAlpha = 0.5; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
-      ctx.fillStyle = "#6a6a8a";
-      ctx.fillText("Loading market data" + dots, W/2, H * 0.94); ctx.globalAlpha = 1;
-
-      if (progress < 1) rafRef.current = requestAnimationFrame(draw);
-      else setTimeout(onDone, 300);
-    };
-    rafRef.current = requestAnimationFrame(draw);
-    return function() { cancelAnimationFrame(rafRef.current); };
-  }, [onDone]);
-
-  return React.createElement("div", {
-    style: { position:"fixed", inset:0, zIndex:999, background:"#050508",
-             display:"flex", alignItems:"center", justifyContent:"center" }
-  }, React.createElement("canvas", { ref: canvasRef, style:{ width:"100%", height:"100%" } }));
+    raf = requestAnimationFrame(step);
+    return function() { cancelAnimationFrame(raf); };
+  }, []); // eslint-disable-line
+ 
+  useEffect(function() {
+    const iv = setInterval(function() {
+      setDots(function(d) { return d.length >= 3 ? "" : d + "."; });
+    }, 400);
+    return function() { clearInterval(iv); };
+  }, []);
+ 
+  const barW = Math.round(progress * 100);
+ 
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:999, background:"#050508", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"monospace" }}>
+      <style>{`
+        @keyframes glowPulse { 0%,100%{text-shadow:0 0 12px #00cc88} 50%{text-shadow:0 0 32px #00cc88, 0 0 60px #00cc8844} }
+        @keyframes spinRing  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes fadeUp    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+ 
+      {/* Outer glow ring */}
+      <div style={{ position:"relative", width:110, height:110, marginBottom:28 }}>
+        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid rgba(0,200,136,0.1)", boxShadow:"0 0 40px rgba(0,200,136,0.08)" }} />
+        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"#00cc88", borderRightColor:"rgba(0,200,136,0.3)", animation:"spinRing 1.2s linear infinite" }} />
+        <div style={{ position:"absolute", inset:8, borderRadius:"50%", border:"1px solid rgba(0,200,136,0.15)", borderBottomColor:"#00cc88", animation:"spinRing 1.8s linear infinite reverse" }} />
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ fontSize:28, color:"#00cc88", fontWeight:900, animation:"glowPulse 2s ease-in-out infinite" }}>FX</div>
+        </div>
+      </div>
+ 
+      <div style={{ fontSize:20, fontWeight:900, color:"#00cc88", letterSpacing:4, marginBottom:6, animation:"glowPulse 2s ease-in-out infinite" }}>
+        FX TRADER
+      </div>
+      <div style={{ fontSize:10, color:"rgba(0,200,136,0.45)", letterSpacing:2, marginBottom:40, animation:"fadeUp 0.6s ease 0.2s both" }}>
+        HGNICE TRADING PLATFORM
+      </div>
+ 
+      {/* Progress bar */}
+      <div style={{ width:200, height:3, background:"rgba(255,255,255,0.06)", borderRadius:2, overflow:"hidden", marginBottom:14 }}>
+        <div style={{ height:"100%", width:barW+"%", background:"linear-gradient(90deg,#007744,#00cc88)", borderRadius:2, boxShadow:"0 0 8px #00cc8866", transition:"width 0.1s linear" }} />
+      </div>
+ 
+      <div style={{ fontSize:11, color:"#4a4a6a", letterSpacing:1 }}>
+        Loading market data{dots}
+      </div>
+ 
+      {/* Decorative candles */}
+      <div style={{ position:"absolute", bottom:60, display:"flex", gap:8, alignItems:"flex-end", opacity:0.15 }}>
+        {[40,28,52,35,48,22,44,38,56,30].map(function(h,i){
+          const bull = i%2===0;
+          return (
+            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+              <div style={{ width:1, height:h*0.3, background:bull?"#00cc88":"#ff3355" }} />
+              <div style={{ width:8, height:h, background:bull?"#00cc88":"#ff3355", borderRadius:1 }} />
+              <div style={{ width:1, height:h*0.2, background:bull?"#00cc88":"#ff3355" }} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
-
+ 
 // ── Chart Canvas ──────────────────────────────────────────────
 function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }) {
   const canvasRef = useRef(null);
@@ -4700,7 +4669,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
   const isDrag    = useRef(false);
   const dragX     = useRef(0);
   const dragOff   = useRef(0);
-
+ 
   const draw = useCallback(function() {
     const canvas = canvasRef.current; if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -4713,12 +4682,12 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#07070e"; ctx.fillRect(0, 0, W, H);
-
+ 
     // Grid
     ctx.strokeStyle = "rgba(255,255,255,0.028)"; ctx.lineWidth = 1;
     for (let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,H/5*i);ctx.lineTo(W,H/5*i);ctx.stroke();}
     for (let i=1;i<7;i++){ctx.beginPath();ctx.moveTo(W/7*i,0);ctx.lineTo(W/7*i,H);ctx.stroke();}
-
+ 
     const allCdls = store.current.candles;
     if (!allCdls || allCdls.length < 2) return;
     const VISIBLE=44, total=allCdls.length;
@@ -4727,7 +4696,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     const startI = Math.max(0, total-VISIBLE-off), endI = total-off;
     const disp   = allCdls.slice(startI, endI);
     if (disp.length < 2) return;
-
+ 
     const prices = disp.flatMap(function(c){return[c.hi,c.lo];});
     let minP = Math.min.apply(null,prices), maxP = Math.max.apply(null,prices);
     const pad = (maxP-minP)*0.08; minP-=pad; maxP+=pad;
@@ -4735,12 +4704,12 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     const cW = (W-PADL-PADR)/disp.length;
     const toY = function(p){ return PADT+((maxP-p)/range)*(H-PADT-PADB); };
     const m = market;
-
+ 
     // Price axis
     ctx.font="bold 9px monospace"; ctx.fillStyle="rgba(255,255,255,0.22)"; ctx.textAlign="right";
     for (let i=0;i<=4;i++){const v=minP+(range*(4-i)/4);ctx.fillText(v.toFixed(m.decimals),W-2,toY(v)+3);}
     ctx.textAlign="left";
-
+ 
     // Candles
     disp.forEach(function(c,i){
       const x=PADL+i*cW, xc=x+cW*0.5, bull=c.c>=c.o;
@@ -4754,7 +4723,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.fillRect(x+cW*0.15,bodyY,bW,bodyH);
       if(isLive)ctx.restore();
     });
-
+ 
     // Entry lines
     activeTrades.forEach(function(trade){
       if(trade.entry<minP||trade.entry>maxP)return;
@@ -4766,7 +4735,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.font="bold 9px monospace"; ctx.fillStyle=trade.dir==="UP"?"#00cc88":"#ff3355";
       ctx.fillText((trade.dir==="UP"?"▲":"▼")+" "+m.prefix+trade.entry.toFixed(m.decimals),PADL+4,ey-3);
     });
-
+ 
     // Live price pill
     if(off===0){
       const lp=store.current.live, cy=toY(lp);
@@ -4782,19 +4751,19 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.fillStyle="#000"; ctx.font="bold 9px monospace"; ctx.textAlign="left";
       ctx.fillText(priceStr,W-PADR+6,cy+3);
     }
-
+ 
     // Pan hint
     if(off>0){ctx.fillStyle="rgba(255,255,255,0.2)";ctx.font="10px sans-serif";ctx.textAlign="right";ctx.fillText("← "+off+" candles back",W-PADR-4,H-5);}
     if(off===0){ctx.fillStyle="rgba(255,255,255,0.1)";ctx.font="9px sans-serif";ctx.textAlign="center";ctx.fillText("← drag to pan history",W/2,H-4);}
   }, [store, activeTrades, market, chartOffset]);
-
+ 
   useEffect(function(){
     let running=true;
     const loop=function(){ if(!running)return; draw(); rafRef.current=requestAnimationFrame(loop); };
     rafRef.current=requestAnimationFrame(loop);
     return function(){ running=false; cancelAnimationFrame(rafRef.current); };
   }, [draw]);
-
+ 
   const onDown = function(e){ isDrag.current=true; dragX.current=e.clientX||(e.touches&&e.touches[0].clientX)||0; dragOff.current=chartOffset; };
   const onMove = function(e){
     if(!isDrag.current)return;
@@ -4803,14 +4772,14 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     onOffsetChange(Math.min(Math.max(Math.round(dragOff.current+dx/9),0),max));
   };
   const onUp = function(){ isDrag.current=false; };
-
+ 
   return React.createElement("div", {
     style:{ background:"#07070e", position:"relative", flexShrink:0, cursor:"grab", userSelect:"none" },
     onMouseDown:onDown, onMouseMove:onMove, onMouseUp:onUp, onMouseLeave:onUp,
     onTouchStart:function(e){onDown(e.touches[0]);}, onTouchMove:function(e){onMove(e.touches[0]);}, onTouchEnd:onUp,
   }, React.createElement("canvas", { ref:canvasRef, style:{ width:"100%", height:210, display:"block" } }));
 }
-
+ 
 // ── Entry Ring ────────────────────────────────────────────────
 function EntryRing({ timeLeft, total, entryWindow }) {
   total       = total       || CANDLE_DURATION;
@@ -4819,7 +4788,7 @@ function EntryRing({ timeLeft, total, entryWindow }) {
   const inWindow  = timeLeft > total - entryWindow;
   const windowPct = inWindow ? (timeLeft-(total-entryWindow))/entryWindow : 0;
   const totalPct  = timeLeft/total;
-
+ 
   useEffect(function(){
     const canvas=canvasRef.current; if(!canvas)return;
     const ctx=canvas.getContext("2d");
@@ -4840,10 +4809,10 @@ function EntryRing({ timeLeft, total, entryWindow }) {
     ctx.fillStyle=inWindow?"#00cc88":timeLeft<=5?"#ff3355":"rgba(255,255,255,0.6)";
     ctx.fillText(timeLeft+"s",cx,cy+5);
   }, [timeLeft,inWindow,windowPct,totalPct]);
-
+ 
   return React.createElement("canvas", { ref:canvasRef, style:{ width:56, height:56, display:"block" } });
 }
-
+ 
 // ── Position Card ─────────────────────────────────────────────
 function PositionCard({ trade, livePrice, market }) {
   const up   = livePrice > trade.entry;
@@ -4868,10 +4837,10 @@ function PositionCard({ trade, livePrice, market }) {
     </div>
   );
 }
-
+ 
 // ── Main TradingGame ──────────────────────────────────────────
 function TradingGame({ balance, setBalance, onBack }) {
-  const [loading,      setLoading]      = useState(true);
+  const [loading,      setLoading]      = useState(false);
   const [marketIdx,    setMarketIdx]    = useState(0);
   const [livePrice,    setLivePrice]    = useState(0);
   const [openRef,      setOpenRef]      = useState(0);
@@ -4884,12 +4853,12 @@ function TradingGame({ balance, setBalance, onBack }) {
   const [chartOffset,  setChartOffset]  = useState(0);
   const [soundOn,      setSoundOn]      = useState(true);
   const [stats, setStats] = useState({ trades:0, wins:0, losses:0, profit:0, totalLoss:0, streak:0, bestStreak:0, pnlCurve:[] });
-
+ 
   const market     = TRADE_MARKETS[marketIdx];
   const entryOpen  = timeLeft > CANDLE_DURATION - ENTRY_WINDOW;
   const pct        = openRef ? ((livePrice - openRef) / openRef * 100) : 0;
   const timerCol   = timeLeft > 10 ? "#00cc88" : timeLeft > 5 ? "#ffd700" : "#ff3355";
-
+ 
   // Refs for interval closures
   const activeTradesRef = useRef([]);
   const livePriceRef    = useRef(0);
@@ -4902,19 +4871,19 @@ function TradingGame({ balance, setBalance, onBack }) {
   const marketRef       = useRef(market);
   const resolvedRef     = useRef(false);
   const pnlCanvasRef    = useRef(null);
-
+ 
   // Keep refs in sync with state
   useEffect(function(){ activeTradesRef.current = activeTrades; }, [activeTrades]);
   useEffect(function(){ soundRef.current = soundOn; }, [soundOn]);
   useEffect(function(){ marketRef.current = market; }, [market]);
-
+ 
   const { store, seed, tick, closeCandle } = useCandleEngine(market);
-
+ 
   const sound = useCallback(function(name) {
     if (!soundRef.current) return;
     if (AudioEngine[name]) AudioEngine[name]();
   }, []);
-
+ 
   const resolveCandle = useCallback(function() {
     const trades = activeTradesRef.current;
     if (!trades.length) return;
@@ -4924,14 +4893,14 @@ function TradingGame({ balance, setBalance, onBack }) {
     const mLabel     = marketRef.current.label;
     const now        = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
     const resolved   = [];
-
+ 
     trades.forEach(function(t) {
       const won = (t.dir==="UP") === outcomeUp;
       const pnl = won ? t.amt * 0.92 : -t.amt;
       setBalance(function(b){ return Math.max(0, b + pnl); });
       resolved.push({ id:t.id, dir:t.dir, entry:t.entry, amt:t.amt, won, pnl, close:closePrice, market:mLabel, time:now });
     });
-
+ 
     setStats(function(s) {
       const newWins  = s.wins   + resolved.filter(function(r){return r.won;}).length;
       const newLoss  = s.losses + resolved.filter(function(r){return !r.won;}).length;
@@ -4940,18 +4909,18 @@ function TradingGame({ balance, setBalance, onBack }) {
       const streak   = resolved.every(function(r){return r.won;}) ? s.streak+1 : 0;
       return { ...s, trades:s.trades+resolved.length, wins:newWins, losses:newLoss, profit:newProfit, totalLoss:newTLoss, streak, bestStreak:Math.max(s.bestStreak,streak), pnlCurve:[...s.pnlCurve, newProfit-newTLoss] };
     });
-
+ 
     setTradeHistory(function(h){ return resolved.concat(h).slice(0,100); });
     setActiveTrades([]);
     activeTradesRef.current = [];
-
+ 
     const anyWon = resolved.some(function(r){return r.won;});
     const totPnl = resolved.reduce(function(s,r){return s+r.pnl;},0);
     setResultInfo({ won:anyWon, pnl:totPnl, close:closePrice, allWon:resolved.every(function(r){return r.won;}) });
     if (soundRef.current) { if (anyWon) AudioEngine.win(); else AudioEngine.loss(); }
     setTimeout(function(){ setResultInfo(null); }, 4200);
   }, [setBalance]);
-
+ 
   const startMarket = useCallback(function(idx) {
     clearInterval(timerRef.current);
     clearInterval(priceRef.current);
@@ -4964,13 +4933,13 @@ function TradingGame({ balance, setBalance, onBack }) {
     setLivePrice(lp); setOpenRef(lp); setTimeLeft(CANDLE_DURATION);
     setActiveTrades([]); activeTradesRef.current = [];
     setChartOffset(0);
-
+ 
     priceRef.current = setInterval(function() {
       const next = tick(m);
       livePriceRef.current = next;
       setLivePrice(next);
     }, 280);
-
+ 
     timerRef.current = setInterval(function() {
       timeLeftRef.current--;
       setTimeLeft(timeLeftRef.current);
@@ -4989,12 +4958,12 @@ function TradingGame({ balance, setBalance, onBack }) {
       }
     }, 1000);
   }, [seed, tick, closeCandle, store, resolveCandle]);
-
+ 
   useEffect(function() {
     startMarket(0);
     return function() { clearInterval(timerRef.current); clearInterval(priceRef.current); };
   }, []); // eslint-disable-line
-
+ 
   const placeBet = useCallback(function(dir) {
     if (betAmt > balance || betAmt < 1 || !entryOpen) return;
     if (soundRef.current) AudioEngine.tradeEntry(dir);
@@ -5005,13 +4974,13 @@ function TradingGame({ balance, setBalance, onBack }) {
     activeTradesRef.current = activeTradesRef.current.concat([trade]);
     setBalance(function(b){ return b - betAmt; });
   }, [betAmt, balance, entryOpen, setBalance]);
-
+ 
   const switchMarket = useCallback(function(idx) {
     if (soundRef.current) AudioEngine.uiClick();
     setMarketIdx(idx);
     startMarket(idx);
   }, [startMarket]);
-
+ 
   // PNL chart
   const drawPnl = useCallback(function() {
     const canvas = pnlCanvasRef.current; if(!canvas)return;
@@ -5033,15 +5002,13 @@ function TradingGame({ balance, setBalance, onBack }) {
     curve.forEach(function(v,i){if(i>0)ctx.lineTo(toX(i),toY(v));});
     ctx.strokeStyle="#00cc88"; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
   }, [stats.pnlCurve]);
-
+ 
   useEffect(function(){ if(activeTab==="profile")drawPnl(); }, [activeTab, stats, drawPnl]);
-
-  const onDone = useCallback(function(){ setLoading(false); }, []);
-
-  if (loading) return <TradingLoader onDone={onDone} />;
-
+ 
+  if (loading) return null;
+ 
   const headerStyle = { background:"rgba(7,7,14,0.95)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 };
-
+ 
   return (
     <div style={{ maxWidth:480, margin:"0 auto", background:"#050508", minHeight:"100vh", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column", color:"#e8e8ff", overflow:"hidden" }}>
       <style>{`
@@ -5051,7 +5018,7 @@ function TradingGame({ balance, setBalance, onBack }) {
         @keyframes blink2     { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes fadeIn     { from{opacity:0} to{opacity:1} }
       `}</style>
-
+ 
       {/* HEADER */}
       <div style={headerStyle}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:"#5a5a7a", fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" }}>‹</button>
@@ -5065,7 +5032,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       </div>
-
+ 
       {/* TABS */}
       <div style={{ display:"flex", background:"rgba(7,7,14,0.9)", borderBottom:"1px solid rgba(255,255,255,0.05)", flexShrink:0 }}>
         {[["trade","Trade"],["history","History"],["profile","Profile"]].map(function(kl){
@@ -5076,11 +5043,11 @@ function TradingGame({ balance, setBalance, onBack }) {
           );
         })}
       </div>
-
+ 
       {/* ═══ TRADE TAB ═══ */}
       {activeTab === "trade" && (
         <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", animation:"tabSlide 0.2s ease" }}>
-
+ 
           {/* Market tabs */}
           <div style={{ display:"flex", gap:6, padding:"10px 12px", overflowX:"auto", background:"rgba(7,7,14,0.8)", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0 }}>
             {TRADE_MARKETS.map(function(tm, i) {
@@ -5093,7 +5060,7 @@ function TradingGame({ balance, setBalance, onBack }) {
               );
             })}
           </div>
-
+ 
           {/* Price bar */}
           <div style={{ padding:"12px 16px", background:"rgba(10,10,20,0.9)", borderBottom:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
             <div>
@@ -5112,7 +5079,7 @@ function TradingGame({ balance, setBalance, onBack }) {
               </div>
             </div>
           </div>
-
+ 
           {/* Timer bars */}
           <div style={{ height:3, background:"rgba(255,255,255,0.04)", flexShrink:0 }}>
             <div style={{ height:"100%", width:((timeLeft/CANDLE_DURATION)*100)+"%", background:"linear-gradient(90deg,"+timerCol+"88,"+timerCol+")", transition:"width 1s linear, background 0.3s" }} />
@@ -5120,10 +5087,10 @@ function TradingGame({ balance, setBalance, onBack }) {
           <div style={{ height:2, background:"rgba(255,255,255,0.02)", flexShrink:0 }}>
             <div style={{ height:"100%", width:entryOpen?((timeLeft-(CANDLE_DURATION-ENTRY_WINDOW))/ENTRY_WINDOW*100)+"%":"0%", background:"linear-gradient(90deg,rgba(0,200,136,0.4),#00cc88)", transition:"width 1s linear" }} />
           </div>
-
+ 
           {/* Chart */}
           <TradeChart store={store} activeTrades={activeTrades} market={market} chartOffset={chartOffset} onOffsetChange={setChartOffset} />
-
+ 
           {/* Bet panel */}
           <div style={{ padding:"14px 14px 12px", background:"rgba(10,10,20,0.85)", borderTop:"1px solid rgba(255,255,255,0.05)", flexShrink:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
@@ -5138,13 +5105,13 @@ function TradingGame({ balance, setBalance, onBack }) {
                 })}
               </div>
             </div>
-
+ 
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"3px 3px 3px 14px" }}>
               <input type="number" value={betAmt} onChange={function(e){ setBetAmt(Math.max(1, parseFloat(e.target.value)||1)); }} style={{ flex:1, background:"transparent", border:"none", color:"#e8e8ff", fontSize:16, fontWeight:700, fontFamily:"sans-serif", outline:"none", minWidth:0 }} />
               <button onClick={function(){ setBetAmt(function(a){return Math.max(1,a-1);}); }} style={{ width:34,height:34,borderRadius:9,border:"none",background:"rgba(255,255,255,0.05)",color:"#e8e8ff",fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>−</button>
               <button onClick={function(){ setBetAmt(function(a){return a+1;}); }} style={{ width:34,height:34,borderRadius:9,border:"none",background:"rgba(255,255,255,0.05)",color:"#e8e8ff",fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>+</button>
             </div>
-
+ 
             {/* UP / DOWN */}
             <div style={{ display:"flex", gap:10 }}>
               {["UP","DOWN"].map(function(dir){
@@ -5157,14 +5124,14 @@ function TradingGame({ balance, setBalance, onBack }) {
                 );
               })}
             </div>
-
+ 
             {!entryOpen && (
               <div style={{ marginTop:10, padding:"10px 14px", background:"rgba(255,51,85,0.06)", border:"1px solid rgba(255,51,85,0.18)", borderRadius:10, textAlign:"center", fontSize:12, fontWeight:700, color:"#ff3355", animation:"entryClosed 1.5s infinite" }}>
                 Entry closed — next candle in {timeLeft}s
               </div>
             )}
           </div>
-
+ 
           {/* Active positions */}
           <div style={{ background:"rgba(7,7,14,0.9)", borderTop:"1px solid rgba(255,255,255,0.04)", maxHeight:220, overflowY:"auto", flexShrink:0 }}>
             <div style={{ padding:"10px 14px 6px", display:"flex", alignItems:"center", gap:8, position:"sticky", top:0, background:"rgba(7,7,14,0.98)", zIndex:2 }}>
@@ -5181,7 +5148,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
-
+ 
       {/* ═══ HISTORY TAB ═══ */}
       {activeTab === "history" && (
         <div style={{ flex:1, overflowY:"auto", animation:"tabSlide 0.2s ease" }}>
@@ -5211,7 +5178,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
-
+ 
       {/* ═══ PROFILE TAB ═══ */}
       {activeTab === "profile" && (
         <div style={{ flex:1, overflowY:"auto", animation:"tabSlide 0.2s ease" }}>
@@ -5244,7 +5211,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
-
+ 
       {/* ═══ RESULT OVERLAY ═══ */}
       {resultInfo && (
         <div style={{ position:"fixed", inset:0, zIndex:700, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.78)", backdropFilter:"blur(16px)", animation:"fadeIn 0.3s ease" }}>
@@ -5265,7 +5232,7 @@ function TradingGame({ balance, setBalance, onBack }) {
     </div>
   );
 }
-
+ 
 /* ── FLOATING HELP ── */
 function FloatingHelp({ show, user }) {
   const [open, setOpen] = useState(false);
@@ -5387,7 +5354,7 @@ function FloatingHelp({ show, user }) {
     </>
   );
 }
-
+ 
 /* ── ROOT ── */
 export default function App() {
   const [screen, setScreen] = useState("login");
@@ -5474,3 +5441,4 @@ export default function App() {
     </div>
   );
 }
+ 
