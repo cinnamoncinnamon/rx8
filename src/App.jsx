@@ -770,13 +770,62 @@ function DepositSetup({ contact, onDone }) {
   );
 }
 
-/* ── WINGO ── */
-const MODES = [
+/* ── WINGO SHARED ENGINE (same result for all users, always running) ── */
+const WINGO_MODES_DEF = [
   { label: "30s", seconds: 30 },
   { label: "1 Min", seconds: 60 },
   { label: "3 Min", seconds: 180 },
   { label: "5 Min", seconds: 300 },
 ];
+
+const GlobalWingo = (function () {
+  const stores = {};
+  const listeners = [];
+  let initialized = false;
+  function seedMode(seconds) {
+    const hist = [];
+    let period = BigInt(BASE);
+    for (let i = 0; i < 50; i++) {
+      const num = Math.floor(Math.random() * 10);
+      hist.unshift({ period: period.toString(), number: num, bigSmall: num >= 5 ? "Big" : "Small", colors: NUM_COLORS[num] });
+      period = period - 1n;
+    }
+    stores[seconds] = { timeLeft: seconds, history: hist, currentPeriod: (BigInt(BASE) + 1n).toString(), lastResults: [7, 4, 2, 4, 7], lastWinNum: null, roundJustEnded: false };
+  }
+  function notify() { listeners.forEach(function(fn){ fn(); }); }
+  function init() {
+    if (initialized) return;
+    initialized = true;
+    WINGO_MODES_DEF.forEach(function(m){ seedMode(m.seconds); });
+    setInterval(function() {
+      WINGO_MODES_DEF.forEach(function(m) {
+        const s = stores[m.seconds];
+        s.timeLeft--;
+        if (s.timeLeft <= 0) {
+          const winNum = Math.floor(Math.random() * 10);
+          const entry = { period: s.currentPeriod, number: winNum, bigSmall: winNum >= 5 ? "Big" : "Small", colors: NUM_COLORS[winNum] };
+          s.history = [entry, ...s.history].slice(0, 50);
+          s.lastResults = [winNum, ...s.lastResults].slice(0, 5);
+          s.currentPeriod = (BigInt(s.currentPeriod) + 1n).toString();
+          s.lastWinNum = winNum;
+          s.roundJustEnded = true;
+          s.timeLeft = m.seconds;
+          setTimeout(function(){ s.roundJustEnded = false; }, 300);
+        }
+      });
+      notify();
+    }, 1000);
+  }
+  function getStore(seconds) { return stores[seconds]; }
+  function subscribe(fn) {
+    listeners.push(fn);
+    return function() { const i = listeners.indexOf(fn); if (i !== -1) listeners.splice(i, 1); };
+  }
+  return { init, getStore, subscribe };
+})();
+
+/* ── WINGO ── */
+const MODES = WINGO_MODES_DEF;
 
 function BetModal({
   type,
@@ -979,78 +1028,62 @@ function WinGoGame({ balance, setBalance, onBack }) {
   const [myHistory, setMyHistory] = useState([]);
   const [resultFlash, setResultFlash] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
-  const timerRef = useRef(null);
   const modeSeconds = MODES[modeIdx].seconds;
+  const pendingBetsRef = useRef([]);
+  const modeSecondsRef = useRef(modeSeconds);
+  useEffect(() => { pendingBetsRef.current = pendingBets; }, [pendingBets]);
+  useEffect(() => { modeSecondsRef.current = MODES[modeIdx].seconds; }, [modeIdx]);
 
-  const resolveRound = useCallback(() => {
-    setPendingBets((bets) => {
-      const winNum = Math.floor(Math.random() * 10);
-      const winColors = NUM_COLORS[winNum];
-      let totalWin = 0;
-      bets.forEach((b) => {
-        let won = false;
-        if (b.type === "big" && winNum >= 5) won = true;
-        if (b.type === "small" && winNum <= 4) won = true;
-        if (b.type === "green" && winColors.includes("green")) won = true;
-        if (b.type === "red" && winColors.includes("red")) won = true;
-        if (b.type === "violet" && winColors.includes("violet")) won = true;
-        if (b.type === "number" && b.value === winNum) won = true;
-        if (won)
-          totalWin +=
-            b.amount *
-            (b.type === "number" ? 9 : b.type === "violet" ? 4.5 : 2);
-      });
-      if (totalWin > 0) setBalance((bl) => bl + totalWin);
-      const entry = {
-        period: currentPeriod,
-        number: winNum,
-        bigSmall: winNum >= 5 ? "Big" : "Small",
-        colors: NUM_COLORS[winNum],
-      };
-      setHistory((h) => [entry, ...h].slice(0, 50));
-      setLastResults((r) => [winNum, ...r].slice(0, 5));
-      setCurrentPeriod((p) => (BigInt(p) + 1n).toString());
-      if (bets.length > 0) {
-        setMyHistory((mh) =>
-          [
-            {
-              period: currentPeriod,
-              number: winNum,
-              bets,
-              totalWin,
-              time: new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            },
-            ...mh,
-          ].slice(0, 30)
-        );
-        setResultFlash({ number: winNum, won: totalWin > 0, amount: totalWin });
-        setTimeout(() => setResultFlash(null), 2800);
-      }
-      return [];
-    });
-  }, [currentPeriod]);
-
+  // Subscribe to GlobalWingo engine
   useEffect(() => {
-    setTimeLeft(modeSeconds);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          resolveRound();
-          return modeSeconds;
+    GlobalWingo.init();
+    const unsub = GlobalWingo.subscribe(() => {
+      const s = GlobalWingo.getStore(modeSecondsRef.current);
+      if (!s) return;
+      setTimeLeft(s.timeLeft);
+      setIsLocked(s.timeLeft <= 5);
+      setHistory([...s.history]);
+      setLastResults([...s.lastResults]);
+      setCurrentPeriod(s.currentPeriod);
+      if (s.roundJustEnded && s.lastWinNum !== null) {
+        const winNum = s.lastWinNum;
+        const winColors = NUM_COLORS[winNum];
+        const bets = pendingBetsRef.current;
+        if (bets.length > 0) {
+          let totalWin = 0;
+          bets.forEach((b) => {
+            let won = false;
+            if (b.type === "big" && winNum >= 5) won = true;
+            if (b.type === "small" && winNum <= 4) won = true;
+            if (b.type === "green" && winColors.includes("green")) won = true;
+            if (b.type === "red" && winColors.includes("red")) won = true;
+            if (b.type === "violet" && winColors.includes("violet")) won = true;
+            if (b.type === "number" && b.value === winNum) won = true;
+            if (won) totalWin += b.amount * (b.type === "number" ? 9 : b.type === "violet" ? 4.5 : 2);
+          });
+          if (totalWin > 0) setBalance((bl) => bl + totalWin);
+          setMyHistory((mh) => [{
+            period: s.currentPeriod, number: winNum, bets, totalWin,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }, ...mh].slice(0, 30));
+          setResultFlash({ number: winNum, won: totalWin > 0, amount: totalWin });
+          setTimeout(() => setResultFlash(null), 2800);
+          setPendingBets([]);
+          pendingBetsRef.current = [];
         }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [modeIdx, modeSeconds]);
+      }
+    });
+    // Init state from current store
+    const s0 = GlobalWingo.getStore(modeSeconds);
+    if (s0) { setTimeLeft(s0.timeLeft); setHistory([...s0.history]); setLastResults([...s0.lastResults]); setCurrentPeriod(s0.currentPeriod); }
+    return unsub;
+  }, []); // eslint-disable-line
 
+  // When switching mode, just re-read from store
   useEffect(() => {
-    setIsLocked(timeLeft <= 5);
-  }, [timeLeft]);
+    const s = GlobalWingo.getStore(modeSeconds);
+    if (s) { setTimeLeft(s.timeLeft); setHistory([...s.history]); setLastResults([...s.lastResults]); setCurrentPeriod(s.currentPeriod); setIsLocked(s.timeLeft <= 5); }
+  }, [modeIdx]);
 
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
@@ -2458,19 +2491,80 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
           ))}
         </div>
       </div>
-      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#fff", borderTop: "1px solid #f0f0f0", display: "flex", zIndex: 100 }}>
-        {[
-          { id: "home", icon: "🏠", label: "Home" },
-          { id: "activity", icon: "🎁", label: "Activity" },
-          { id: "promo", icon: "💎", label: "Promo" },
-          { id: "wallet", icon: "👛", label: "Wallet" },
-          { id: "account", icon: "👤", label: "Account" },
-        ].map((n) => (
-          <button key={n.id} onClick={() => { setActiveNav(n.id); if (n.id === "wallet") onGoWallet(); if (n.id === "account") onGoProfile(); }} style={{ flex: 1, padding: "10px 0 6px", border: "none", background: "transparent", cursor: "pointer", color: activeNav === n.id ? G.red : "#aaa", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontFamily: "'Poppins',sans-serif" }}>
-            <span style={{ fontSize: 20 }}>{n.icon}</span>
-            <span style={{ fontSize: 11, fontWeight: 600 }}>{n.label}</span>
-          </button>
-        ))}
+      <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={onGoProfile} />
+    </div>
+  );
+}
+
+/* ── BOTTOM NAV (shared) ── */
+function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoProfile, onGoHome }) {
+  const navItems = [
+    { id:"home", label:"Home", svg:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/></svg> },
+    { id:"activity", label:"Activity", svg:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
+    { id:"promo", label:"Promotion", isCenter:true, svg:<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg> },
+    { id:"wallet", label:"Wallet", svg:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><circle cx="18" cy="12" r="2"/></svg> },
+    { id:"account", label:"Account", svg:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  ];
+  return (
+    <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"#fff", borderTop:"1px solid #f0f0f0", display:"flex", zIndex:100, height:60 }}>
+      {navItems.map((n) => (
+        <button key={n.id} onClick={() => {
+          setActiveNav(n.id);
+          if (n.id === "wallet") onGoWallet && onGoWallet();
+          if (n.id === "account") onGoProfile && onGoProfile();
+          if (n.id === "home") onGoHome && onGoHome();
+        }} style={{ flex:1, padding:"6px 0 4px", border:"none", background:"transparent", cursor:"pointer", color: activeNav===n.id ? G.red : "#bbb", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, fontFamily:"'Poppins',sans-serif", position:"relative" }}>
+          {n.isCenter ? (
+            <div style={{ width:48, height:48, borderRadius:"50%", background:gradient, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", boxShadow:"0 4px 16px #EF535066", marginTop:-20 }}>{n.svg}</div>
+          ) : (
+            <span style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>{n.svg}</span>
+          )}
+          <span style={{ fontSize:10, fontWeight:600 }}>{n.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ── SETTINGS SCREEN ── */
+function SettingsScreen({ user, onBack }) {
+  const [loginOld, setLoginOld] = useState(""); const [loginNew, setLoginNew] = useState(""); const [loginConfirm, setLoginConfirm] = useState("");
+  const [withOld, setWithOld] = useState(""); const [withNew, setWithNew] = useState(""); const [withConfirm, setWithConfirm] = useState("");
+  const [loginMsg, setLoginMsg] = useState(""); const [withMsg, setWithMsg] = useState("");
+  const saveLogin = () => { if (!loginOld||!loginNew||!loginConfirm){setLoginMsg("Fill all fields.");return;} if(loginNew!==loginConfirm){setLoginMsg("Passwords don't match.");return;} setLoginMsg("✅ Login password updated!"); setTimeout(()=>setLoginMsg(""),3000); setLoginOld("");setLoginNew("");setLoginConfirm(""); };
+  const saveWith  = () => { if (!withOld||!withNew||!withConfirm){setWithMsg("Fill all fields.");return;} if(withNew!==withConfirm){setWithMsg("Passwords don't match.");return;} setWithMsg("✅ Withdrawal password updated!"); setTimeout(()=>setWithMsg(""),3000); setWithOld("");setWithNew("");setWithConfirm(""); };
+  const Field = ({label,val,set,ph}) => (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:12,color:G.sub,fontWeight:600,marginBottom:5}}>{label}</div>
+      <input type="password" value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={{width:"100%",padding:"12px 14px",borderRadius:11,border:"1.5px solid #eee",fontSize:14,fontFamily:"'Poppins',sans-serif",background:"#fafafa",color:G.text,outline:"none"}} />
+    </div>
+  );
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif",paddingBottom:80}}>
+      <div style={{background:gradient,padding:"0 0 20px"}}>
+        <div style={{display:"flex",alignItems:"center",padding:"14px 20px"}}>
+          <button onClick={onBack} style={{background:"none",border:"none",color:"#fff",fontSize:22,cursor:"pointer"}}>‹</button>
+          <span style={{color:"#fff",fontWeight:700,fontSize:16,flex:1,textAlign:"center"}}>Settings Center</span>
+          <div style={{width:30}}/>
+        </div>
+      </div>
+      <div style={{padding:"16px 14px",display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{background:"#fff",borderRadius:16,padding:"18px",boxShadow:"0 2px 8px #0001"}}>
+          <div style={{fontWeight:800,fontSize:15,color:G.text,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>🔐</span> Login Password</div>
+          <Field label="Current Password" val={loginOld} set={setLoginOld} ph="Enter current password" />
+          <Field label="New Password" val={loginNew} set={setLoginNew} ph="Enter new password" />
+          <Field label="Confirm New Password" val={loginConfirm} set={setLoginConfirm} ph="Confirm new password" />
+          {loginMsg && <div style={{fontSize:12,color:loginMsg.startsWith("✅")?"#22C55E":"#EF5350",marginBottom:8,fontWeight:600}}>{loginMsg}</div>}
+          <button onClick={saveLogin} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Update Login Password</button>
+        </div>
+        <div style={{background:"#fff",borderRadius:16,padding:"18px",boxShadow:"0 2px 8px #0001"}}>
+          <div style={{fontWeight:800,fontSize:15,color:G.text,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>💳</span> Withdrawal Password</div>
+          <Field label="Current Password" val={withOld} set={setWithOld} ph="Enter current password" />
+          <Field label="New Password" val={withNew} set={setWithNew} ph="Enter new password" />
+          <Field label="Confirm New Password" val={withConfirm} set={setWithConfirm} ph="Confirm new password" />
+          {withMsg && <div style={{fontSize:12,color:withMsg.startsWith("✅")?"#22C55E":"#EF5350",marginBottom:8,fontWeight:600}}>{withMsg}</div>}
+          <button onClick={saveWith} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Update Withdrawal Password</button>
+        </div>
       </div>
     </div>
   );
@@ -2478,93 +2572,155 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
 
 /* ── PROFILE ── */
 const AVATARS = ["🎮","🦊","🐉","🎯","🦁","🤖","👾","🎪","🦸","🧙","🐺","🦅","🐯","🦄","🎭","🎨"];
-function ProfileScreen({ user, balance, accounts, onBack }) {
+function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome }) {
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
   const uidNum = useRef(Math.floor(100000 + Math.random() * 900000)).current;
+
+  const menuRow = (icon, label, right, onClick) => (
+    <div key={label} onClick={onClick} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #f5f5f5",cursor:"pointer",background:"#fff"}}>
+      <span style={{fontSize:22,marginRight:14}}>{icon}</span>
+      <span style={{flex:1,fontSize:14,fontWeight:600,color:G.text}}>{label}</span>
+      <span style={{fontSize:13,color:G.sub,marginRight:4}}>{right||""}</span>
+      <span style={{color:"#ccc",fontSize:16}}>›</span>
+    </div>
+  );
+
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", background: "#F4F4F8", minHeight: "100vh", fontFamily: "'Poppins',sans-serif", paddingBottom: 20 }}>
-      <div style={{ background: gradient, padding: "0 0 32px", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "14px 20px" }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", color: "#fff", fontSize: 22, cursor: "pointer" }}>‹</button>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, flex: 1, textAlign: "center" }}>My Account</span>
-          <div style={{ width: 30 }} />
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif",paddingBottom:80}}>
+      <div style={{background:gradient,padding:"0 0 32px",position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",padding:"14px 20px"}}>
+          <button onClick={onBack} style={{background:"none",border:"none",color:"#fff",fontSize:22,cursor:"pointer"}}>‹</button>
+          <span style={{color:"#fff",fontWeight:700,fontSize:16,flex:1,textAlign:"center"}}>My Account</span>
+          <button onClick={onGoSettings} style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",borderRadius:8,padding:"5px 10px",fontFamily:"'Poppins',sans-serif"}}>⚙️ Settings</button>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px" }}>
-          <div style={{ position: "relative" }}>
-            <div onClick={() => setShowAvatarPicker(true)} style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, border: "3px solid rgba(255,255,255,.6)", cursor: "pointer" }}>{AVATARS[avatarIdx]}</div>
-            <div onClick={() => setShowAvatarPicker(true)} style={{ position: "absolute", bottom: -1, right: -1, width: 22, height: 22, borderRadius: "50%", background: "#FFE082", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#333" }}>✎</div>
+        <div style={{display:"flex",alignItems:"center",gap:16,padding:"0 20px"}}>
+          <div style={{position:"relative"}}>
+            <div onClick={()=>setShowAvatarPicker(true)} style={{width:72,height:72,borderRadius:"50%",background:"rgba(255,255,255,.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,border:"3px solid rgba(255,255,255,.6)",cursor:"pointer"}}>{AVATARS[avatarIdx]}</div>
+            <div onClick={()=>setShowAvatarPicker(true)} style={{position:"absolute",bottom:-1,right:-1,width:22,height:22,borderRadius:"50%",background:"#FFE082",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:12,fontWeight:700,color:"#333"}}>✎</div>
           </div>
           <div>
-            <div style={{ color: "#fff", fontWeight: 800, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{color:"#fff",fontWeight:800,fontSize:18,display:"flex",alignItems:"center",gap:8}}>
               {username.toUpperCase()}
-              <span style={{ background: "rgba(255,255,255,.2)", borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⭐ VIP0</span>
+              <span style={{background:"rgba(255,255,255,.2)",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:600}}>⭐ VIP0</span>
             </div>
-            <div style={{ color: "rgba(255,255,255,.7)", fontSize: 12, marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ background: "rgba(0,0,0,.2)", borderRadius: 8, padding: "2px 10px", fontSize: 11 }}>UID | {uidNum}</span>
-              <span style={{ cursor: "pointer" }}>📋</span>
+            <div style={{color:"rgba(255,255,255,.7)",fontSize:12,marginTop:3,display:"flex",alignItems:"center",gap:6}}>
+              <span style={{background:"rgba(0,0,0,.2)",borderRadius:8,padding:"2px 10px",fontSize:11}}>UID | {uidNum}</span>
+              <span style={{cursor:"pointer"}}>📋</span>
             </div>
-            <div style={{ color: "rgba(255,255,255,.55)", fontSize: 11, marginTop: 4 }}>{user?.method === "mobile" ? "📱" : "📧"} {user?.contact}</div>
+            <div style={{color:"rgba(255,255,255,.55)",fontSize:11,marginTop:4}}>{user?.method==="mobile"?"📱":"📧"} {user?.contact}</div>
           </div>
         </div>
       </div>
+
       {showAvatarPicker && (
-        <div style={{ position: "fixed", inset: 0, background: "#0009", zIndex: 400, display: "flex", alignItems: "flex-end" }} onClick={() => setShowAvatarPicker(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: "#1A1A2E", borderRadius: "20px 20px 0 0", padding: 20, animation: "slideUp .3s ease" }}>
-            <div style={{ color: "#fff", fontWeight: 700, marginBottom: 14, textAlign: "center" }}>Choose Avatar</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 10 }}>
-              {AVATARS.map((a, i) => (
-                <div key={i} onClick={() => { setAvatarIdx(i); setShowAvatarPicker(false); }} style={{ width: 40, height: 40, borderRadius: "50%", background: avatarIdx === i ? "#EF5350" : "#2A2A40", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer", border: avatarIdx === i ? "2px solid #fff" : "2px solid transparent" }}>{a}</div>
+        <div style={{position:"fixed",inset:0,background:"#0009",zIndex:400,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowAvatarPicker(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:480,margin:"0 auto",background:"#1A1A2E",borderRadius:"20px 20px 0 0",padding:20,animation:"slideUp .3s ease"}}>
+            <div style={{color:"#fff",fontWeight:700,marginBottom:14,textAlign:"center"}}>Choose Avatar</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:10}}>
+              {AVATARS.map((a,i)=>(
+                <div key={i} onClick={()=>{setAvatarIdx(i);setShowAvatarPicker(false);}} style={{width:40,height:40,borderRadius:"50%",background:avatarIdx===i?"#EF5350":"#2A2A40",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,cursor:"pointer",border:avatarIdx===i?"2px solid #fff":"2px solid transparent"}}>{a}</div>
               ))}
             </div>
           </div>
         </div>
       )}
-      <div style={{ background: "#fff", margin: "0 14px", marginTop: -16, borderRadius: 16, padding: "16px", boxShadow: "0 4px 20px #0001", position: "relative", zIndex: 10 }}>
-        <div style={{ color: G.sub, fontSize: 12, marginBottom: 4 }}>Total balance</div>
-        <div style={{ fontWeight: 900, fontSize: 26, color: G.text }}>৳{balance.toFixed(2)}</div>
-        <div style={{ display: "flex", gap: 0, marginTop: 14, justifyContent: "space-around" }}>
-          {[{ icon: "💳", label: "Wallet" }, { icon: "📥", label: "Deposit" }, { icon: "📤", label: "Withdraw" }, { icon: "👑", label: "VIP" }].map((a) => (
-            <div key={a.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: "#FFF0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{a.icon}</div>
-              <span style={{ fontSize: 11, color: G.sub, fontWeight: 600 }}>{a.label}</span>
+
+      {/* Balance card */}
+      <div style={{background:"#fff",margin:"0 14px",marginTop:-16,borderRadius:16,padding:"16px",boxShadow:"0 4px 20px #0001",position:"relative",zIndex:10}}>
+        <div style={{color:G.sub,fontSize:12,marginBottom:4}}>Total balance</div>
+        <div style={{fontWeight:900,fontSize:26,color:G.text}}>৳{balance.toFixed(2)}</div>
+        <div style={{display:"flex",gap:0,marginTop:14,justifyContent:"space-around"}}>
+          {[{icon:"💳",label:"Wallet"},{icon:"📥",label:"Deposit"},{icon:"📤",label:"Withdraw"},{icon:"👑",label:"VIP"}].map(a=>(
+            <div key={a.label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
+              <div style={{width:44,height:44,borderRadius:12,background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{a.icon}</div>
+              <span style={{fontSize:11,color:G.sub,fontWeight:600}}>{a.label}</span>
             </div>
           ))}
         </div>
       </div>
-      <div style={{ padding: "12px 14px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+
+      {/* History grid */}
+      <div style={{padding:"12px 14px 0"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
           {[
-            { icon: "📊", label: "Game History", sub: "My game records", bg: "#EEF4FF" },
-            { icon: "💱", label: "Transaction", sub: "Transfer history", bg: "#EDFFF5" },
-            { icon: "📥", label: "Deposit", sub: "Deposit history", bg: "#FFF0F0" },
-            { icon: "📤", label: "Withdraw", sub: "Withdrawal history", bg: "#FFF8E1" },
-          ].map((item) => (
-            <div key={item.label} style={{ background: "#fff", borderRadius: 14, padding: "14px", cursor: "pointer", boxShadow: "0 2px 8px #0001", display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{item.icon}</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>{item.label}</div>
-                <div style={{ fontSize: 11, color: G.sub }}>{item.sub}</div>
-              </div>
+            {icon:"📊",label:"Game History",sub:"My game records",bg:"#EEF4FF"},
+            {icon:"💱",label:"Transaction",sub:"Transfer history",bg:"#EDFFF5"},
+            {icon:"📥",label:"Deposit",sub:"Deposit history",bg:"#FFF0F0"},
+            {icon:"📤",label:"Withdraw",sub:"Withdrawal history",bg:"#FFF8E1"},
+          ].map(item=>(
+            <div key={item.label} style={{background:"#fff",borderRadius:14,padding:"14px",cursor:"pointer",boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:40,height:40,borderRadius:11,background:item.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{item.icon}</div>
+              <div><div style={{fontWeight:700,fontSize:13}}>{item.label}</div><div style={{fontSize:11,color:G.sub}}>{item.sub}</div></div>
             </div>
           ))}
         </div>
-        <div style={{ background: "#fff", borderRadius: 14, padding: "16px", boxShadow: "0 2px 8px #0001", marginBottom: 10 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>💳 Payment Accounts</div>
-          <div style={{ background: "#FFF8E1", borderRadius: 10, padding: "12px", marginBottom: 8, border: "1px solid #FFE082" }}>
-            <div style={{ fontSize: 11, color: "#E65100", fontWeight: 600, marginBottom: 4 }}>Main Account (permanent)</div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: G.text }}>{accounts?.main || "Not configured"}</div>
+
+        {/* Safe */}
+        <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",boxShadow:"0 2px 8px #0001",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🟡</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:14,color:G.text}}>Safe</div>
+              <div style={{fontSize:11,color:G.sub}}>Half-hour interest rate 0.0%</div>
+            </div>
           </div>
-          {accounts?.extras?.filter(Boolean).map((e, i) => (
-            <div key={i} style={{ background: "#f5f5f5", borderRadius: 10, padding: "10px 12px", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: G.sub, marginBottom: 2 }}>Withdrawal #{i + 2}</div>
-              <div style={{ fontWeight: 600, color: G.text }}>{e}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{background:gradient,borderRadius:20,padding:"3px 10px",color:"#fff",fontWeight:700,fontSize:12}}>৳0.00</span>
+            <span style={{color:"#ccc",fontSize:16}}>›</span>
+          </div>
+        </div>
+
+        {/* Menu rows */}
+        <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 8px #0001",marginBottom:10,overflow:"hidden"}}>
+          {menuRow("🔔","Notification","")}
+          {menuRow("🎁","Gifts","")}
+          {menuRow("📊","Game Statistics","")}
+          {menuRow("🌐","Language","English")}
+        </div>
+
+        {/* Service Center */}
+        <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 8px #0001",marginBottom:10,overflow:"hidden"}}>
+          <div style={{padding:"12px 16px 8px",fontWeight:700,fontSize:13,color:G.text,borderBottom:"1px solid #f5f5f5"}}>Service center</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"16px 10px",gap:16}}>
+            {[
+              {icon:"⚙️",label:"Settings",onClick:onGoSettings},
+              {icon:"💬",label:"Feedback"},
+              {icon:"📢",label:"Announcement"},
+              {icon:"🎧",label:"Customer Service"},
+              {icon:"📖",label:"Beginner's Guide"},
+              {icon:"ℹ️",label:"About us"},
+            ].map((item,i)=>(
+              <div key={i} onClick={item.onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
+                <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{item.icon}</div>
+                <span style={{fontSize:11,color:G.sub,fontWeight:600,textAlign:"center"}}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Payment accounts */}
+        <div style={{background:"#fff",borderRadius:14,padding:"16px",boxShadow:"0 2px 8px #0001",marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>💳 Payment Accounts</div>
+          <div style={{background:"#FFF8E1",borderRadius:10,padding:"12px",marginBottom:8,border:"1px solid #FFE082"}}>
+            <div style={{fontSize:11,color:"#E65100",fontWeight:600,marginBottom:4}}>Main Account (permanent)</div>
+            <div style={{fontWeight:700,fontSize:15,color:G.text}}>{accounts?.main||"Not configured"}</div>
+          </div>
+          {accounts?.extras?.filter(Boolean).map((e,i)=>(
+            <div key={i} style={{background:"#f5f5f5",borderRadius:10,padding:"10px 12px",marginBottom:6}}>
+              <div style={{fontSize:11,color:G.sub,marginBottom:2}}>Withdrawal #{i+2}</div>
+              <div style={{fontWeight:600,color:G.text}}>{e}</div>
             </div>
           ))}
         </div>
-        <button style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", background: "#FFF0F0", color: "#EF5350", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>🚪 Log Out</button>
+
+        <button style={{width:"100%",padding:"14px 0",borderRadius:12,border:"1.5px solid #EF5350",background:"#fff",color:"#EF5350",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:8}}>
+          ⏻ Log Out
+        </button>
       </div>
+
+      <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={()=>{}} onGoHome={onGoHome} />
     </div>
   );
 }
