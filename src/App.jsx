@@ -3315,7 +3315,7 @@ function TradingGame({ balance, setBalance, onBack }) {
         <div style={{ fontFamily:"monospace", fontSize:15, fontWeight:900, color:"#00cc88", letterSpacing:2 }}>FX TRADER</div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <button onClick={function(){ setSoundOn(function(v){return !v;}); }} style={{ background:soundOn?"rgba(0,200,136,0.08)":"rgba(255,255,255,0.04)", border:"1px solid "+(soundOn?"rgba(0,200,136,0.2)":"rgba(255,255,255,0.08)"), borderRadius:8, padding:"5px 10px", fontSize:13, cursor:"pointer", color:soundOn?"#00cc88":"#4a4a6a", transition:"all 0.2s" }}>
-            {soundOn ? "ON" : "OFF"}
+            {soundOn ? "🔊 Sound" : "🔇 Sound"}
           </button>
           <div style={{ background:"rgba(0,200,136,0.08)", border:"1px solid rgba(0,200,136,0.18)", borderRadius:22, padding:"5px 14px", fontSize:13, fontWeight:800, color:"#00cc88", fontFamily:"monospace" }}>
             ৳{balance.toFixed(2)}
