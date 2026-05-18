@@ -2496,6 +2496,358 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
   );
 }
 
+
+/* ── PROFILE SUB-SCREENS ── */
+
+function SubHeader({ title, onBack }) {
+  return (
+    <div style={{background:gradient,padding:"0 0 0"}}>
+      <div style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:10}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",fontSize:20,cursor:"pointer",borderRadius:8,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+        <span style={{color:"#fff",fontWeight:700,fontSize:16,flex:1,textAlign:"center"}}>{title}</span>
+        <div style={{width:34}}/>
+      </div>
+    </div>
+  );
+}
+
+function GameHistoryScreen({ onBack, myHistory }) {
+  const items = myHistory && myHistory.length > 0 ? myHistory : [];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Game History" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        {items.length === 0 ? (
+          <div style={{background:"#fff",borderRadius:16,padding:"60px 20px",textAlign:"center",boxShadow:"0 2px 8px #0001"}}>
+            <div style={{fontSize:48,marginBottom:12}}>🎮</div>
+            <div style={{fontWeight:700,fontSize:16,color:G.text,marginBottom:6}}>No game records yet</div>
+            <div style={{fontSize:13,color:G.sub}}>Start playing to see your history here</div>
+          </div>
+        ) : items.map((row,i) => (
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 8px #0001"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:11,color:G.sub}}>{row.period?.slice(-8)} · {row.time}</span>
+              <span style={{fontWeight:800,fontSize:14,color:row.totalWin>0?"#22C55E":"#EF5350"}}>{row.totalWin>0?`+৳${row.totalWin.toFixed(2)} Won 🎉`:"No win"}</span>
+            </div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {row.bets?.map((b,j)=>(
+                <span key={j} style={{padding:"3px 10px",background:"#F4F4F8",borderRadius:20,fontSize:11,fontWeight:600,color:G.text}}>{b.label} ৳{b.amount}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TransactionScreen({ onBack, balance }) {
+  const txns = [
+    {type:"Deposit",amount:"+৳500.00",time:"Today, 10:32 AM",status:"Success",icon:"📥",col:"#22C55E"},
+    {type:"Withdrawal",amount:"-৳200.00",time:"Yesterday, 3:15 PM",status:"Success",icon:"📤",col:"#EF5350"},
+    {type:"Win Bonus",amount:"+৳90.00",time:"Yesterday, 2:00 PM",status:"Credited",icon:"🎉",col:"#22C55E"},
+    {type:"Deposit",amount:"+৳1000.00",time:"May 15, 9:45 AM",status:"Success",icon:"📥",col:"#22C55E"},
+    {type:"Withdrawal",amount:"-৳300.00",time:"May 14, 4:20 PM",status:"Processing",icon:"📤",col:"#F97316"},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Transaction History" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        {txns.map((t,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:46,height:46,borderRadius:14,background:t.col+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{t.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:G.text}}>{t.type}</div>
+              <div style={{fontSize:11,color:G.sub,marginTop:2}}>{t.time}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:800,fontSize:15,color:t.col}}>{t.amount}</div>
+              <div style={{fontSize:10,marginTop:2,color:t.status==="Processing"?"#F97316":"#22C55E",fontWeight:600}}>{t.status}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NotificationScreen({ onBack }) {
+  const notes = [
+    {icon:"🎉",title:"Win Bonus Credited",body:"৳90.00 has been credited to your account.",time:"2 min ago",unread:true},
+    {icon:"📢",title:"New Event: Double Win Weekend",body:"Play this weekend and earn 2x rewards on all games!",time:"1 hour ago",unread:true},
+    {icon:"✅",title:"Deposit Successful",body:"Your deposit of ৳500 was processed successfully.",time:"Today, 10:32 AM",unread:false},
+    {icon:"🔔",title:"Security Alert",body:"Your password was changed. If this wasn't you, contact support.",time:"Yesterday",unread:false},
+    {icon:"🎁",title:"Daily Gift Available",body:"Your daily login bonus is ready to claim!",time:"Yesterday",unread:false},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Notifications" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        {notes.map((n,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 8px #0001",display:"flex",gap:14,alignItems:"flex-start",borderLeft:n.unread?"3px solid #EF5350":"3px solid transparent"}}>
+            <div style={{width:42,height:42,borderRadius:12,background:n.unread?"#FFF0F0":"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{n.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13,color:G.text,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                {n.title}
+                {n.unread && <span style={{width:8,height:8,borderRadius:"50%",background:"#EF5350",display:"inline-block",flexShrink:0}}/>}
+              </div>
+              <div style={{fontSize:12,color:G.sub,marginTop:4,lineHeight:1.5}}>{n.body}</div>
+              <div style={{fontSize:10,color:"#bbb",marginTop:4}}>{n.time}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GiftsScreen({ onBack }) {
+  const [claimed, setClaimed] = React.useState({});
+  const gifts = [
+    {id:1,icon:"🎁",title:"Daily Login Bonus",desc:"Log in every day to earn rewards",amount:"৳50.00",expires:"Expires today",claimable:true},
+    {id:2,icon:"🏆",title:"First Deposit Bonus",desc:"100% bonus on your first deposit",amount:"Up to ৳10,000",expires:"Limited time",claimable:true},
+    {id:3,icon:"🎯",title:"Win Streak Bonus",desc:"Win 5 rounds in a row to unlock",amount:"৳200.00",expires:"Locked",claimable:false},
+    {id:4,icon:"👥",title:"Referral Reward",desc:"Invite a friend and both get rewarded",amount:"৳100.00",expires:"Ongoing",claimable:true},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Gifts & Bonuses" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        {gifts.map((g)=>(
+          <div key={g.id} style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:12,boxShadow:"0 2px 8px #0001",display:"flex",gap:14,alignItems:"center"}}>
+            <div style={{width:52,height:52,borderRadius:16,background:g.claimable?"linear-gradient(135deg,#EF5350,#FF8A80)":"#f0f0f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{g.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:G.text}}>{g.title}</div>
+              <div style={{fontSize:11,color:G.sub,marginTop:2}}>{g.desc}</div>
+              <div style={{fontSize:13,fontWeight:800,color:"#EF5350",marginTop:4}}>{g.amount}</div>
+              <div style={{fontSize:10,color:"#bbb",marginTop:2}}>{g.expires}</div>
+            </div>
+            <button onClick={()=>g.claimable&&setClaimed(c=>({...c,[g.id]:true}))} style={{padding:"8px 14px",borderRadius:20,border:"none",background:claimed[g.id]?"#e0e0e0":g.claimable?gradient:"#e0e0e0",color:claimed[g.id]?"#999":g.claimable?"#fff":"#999",fontWeight:700,fontSize:12,cursor:g.claimable&&!claimed[g.id]?"pointer":"default",fontFamily:"'Poppins',sans-serif",whiteSpace:"nowrap"}}>
+              {claimed[g.id]?"Claimed":g.claimable?"Claim":"Locked"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GameStatsScreen({ onBack }) {
+  const stats = [
+    {label:"Total Bets",value:"0",icon:"🎮",col:"#3B82F6"},
+    {label:"Total Wins",value:"0",icon:"🏆",col:"#22C55E"},
+    {label:"Total Losses",value:"0",icon:"💔",col:"#EF5350"},
+    {label:"Win Rate",value:"0%",icon:"📊",col:"#F97316"},
+    {label:"Total Wagered",value:"৳0",icon:"💰",col:"#7C3AED"},
+    {label:"Net Profit",value:"৳0",icon:"📈",col:"#22C55E"},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Game Statistics" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          {stats.map((s,i)=>(
+            <div key={i} style={{background:"#fff",borderRadius:14,padding:"16px",boxShadow:"0 2px 8px #0001",textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:6}}>{s.icon}</div>
+              <div style={{fontSize:22,fontWeight:900,color:s.col}}>{s.value}</div>
+              <div style={{fontSize:11,color:G.sub,fontWeight:600,marginTop:4}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#fff",borderRadius:14,padding:"16px",boxShadow:"0 2px 8px #0001",textAlign:"center"}}>
+          <div style={{fontSize:13,color:G.sub,marginBottom:8}}>Play more games to unlock detailed statistics</div>
+          <div style={{fontSize:36}}>📉</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LanguageScreen({ onBack }) {
+  const [selected, setSelected] = React.useState("English");
+  const langs = [
+    {code:"en",name:"English",native:"English",flag:"🇬🇧"},
+    {code:"bn",name:"Bengali",native:"বাংলা",flag:"🇧🇩"},
+    {code:"hi",name:"Hindi",native:"हिन्दी",flag:"🇮🇳"},
+    {code:"ur",name:"Urdu",native:"اردو",flag:"🇵🇰"},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Language" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{background:"#fff",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 8px #0001"}}>
+          {langs.map((l,i)=>(
+            <div key={l.code} onClick={()=>setSelected(l.name)} style={{display:"flex",alignItems:"center",padding:"16px",borderBottom:i<langs.length-1?"1px solid #f5f5f5":"none",cursor:"pointer",background:selected===l.name?"#FFF0F0":"#fff"}}>
+              <span style={{fontSize:26,marginRight:14}}>{l.flag}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:14,color:G.text}}>{l.name}</div>
+                <div style={{fontSize:12,color:G.sub}}>{l.native}</div>
+              </div>
+              <div style={{width:22,height:22,borderRadius:"50%",border:"2px solid",borderColor:selected===l.name?"#EF5350":"#ddd",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {selected===l.name&&<div style={{width:12,height:12,borderRadius:"50%",background:"#EF5350"}}/>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={onBack} style={{width:"100%",marginTop:16,padding:"14px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Save Language</button>
+      </div>
+    </div>
+  );
+}
+
+function FeedbackScreen({ onBack }) {
+  const [msg, setMsg] = React.useState("");
+  const [type, setType] = React.useState("Bug");
+  const [sent, setSent] = React.useState(false);
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Feedback" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 2px 8px #0001"}}>
+          <div style={{fontSize:13,fontWeight:600,color:G.sub,marginBottom:8}}>Type</div>
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            {["Bug","Suggestion","Complaint","Other"].map(t=>(
+              <button key={t} onClick={()=>setType(t)} style={{padding:"7px 16px",borderRadius:20,border:"none",background:type===t?gradient:"#f0f0f0",color:type===t?"#fff":"#666",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>{t}</button>
+            ))}
+          </div>
+          <div style={{fontSize:13,fontWeight:600,color:G.sub,marginBottom:8}}>Your Message</div>
+          <textarea value={msg} onChange={e=>setMsg(e.target.value)} placeholder="Describe your feedback in detail..." rows={5} style={{width:"100%",padding:"12px",borderRadius:12,border:"1.5px solid #eee",fontSize:14,fontFamily:"'Poppins',sans-serif",resize:"none",outline:"none",color:G.text,background:"#fafafa"}}/>
+          {sent && <div style={{color:"#22C55E",fontWeight:600,fontSize:13,marginTop:8}}>✅ Feedback submitted! Thank you.</div>}
+          <button onClick={()=>{if(msg.trim()){setSent(true);setMsg("");}}} style={{width:"100%",marginTop:14,padding:"14px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Submit Feedback</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementScreen({ onBack }) {
+  const items = [
+    {title:"🎉 New Game: K3 Coming Soon!",body:"We are excited to announce that K3 Lottery will be launching next week. Stay tuned for exclusive early-access bonuses.",date:"May 18, 2026",hot:true},
+    {title:"💰 Double Rewards Weekend",body:"This Saturday and Sunday all WinGo bets earn 2x rewards. Don't miss out!",date:"May 15, 2026",hot:true},
+    {title:"🔧 Scheduled Maintenance",body:"The platform will be under maintenance on May 20 from 2:00 AM to 4:00 AM. Services may be temporarily unavailable.",date:"May 14, 2026",hot:false},
+    {title:"🏆 VIP Program Upgraded",body:"Our VIP system has been upgraded with new tiers and better rewards. Check your VIP level now.",date:"May 10, 2026",hot:false},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Announcements" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        {items.map((a,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"16px",marginBottom:10,boxShadow:"0 2px 8px #0001",borderLeft:a.hot?"4px solid #EF5350":"4px solid transparent"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{fontWeight:700,fontSize:14,color:G.text,flex:1,paddingRight:8}}>{a.title}</div>
+              {a.hot&&<span style={{background:"#EF5350",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,flexShrink:0}}>HOT</span>}
+            </div>
+            <div style={{fontSize:12,color:G.sub,lineHeight:1.6,marginBottom:8}}>{a.body}</div>
+            <div style={{fontSize:10,color:"#bbb"}}>{a.date}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BeginnerGuideScreen({ onBack }) {
+  const steps = [
+    {num:1,title:"Register & Verify",desc:"Create your account using your mobile number. Complete OTP verification to secure your account.",icon:"📱"},
+    {num:2,title:"Deposit Funds",desc:"Go to Wallet → Deposit. Choose your amount and pay via bKash, Nagad, or bank transfer.",icon:"💳"},
+    {num:3,title:"Choose a Game",desc:"Pick from WinGo, Aviator, or FX Trader from the home screen. Each game has different rules and payouts.",icon:"🎮"},
+    {num:4,title:"Place Your Bet",desc:"Select your prediction — color, number, big/small, or UP/DOWN. Set your amount and confirm.",icon:"🎯"},
+    {num:5,title:"Watch the Result",desc:"Results are real-time and provably fair. Win and your balance is credited instantly.",icon:"🏆"},
+    {num:6,title:"Withdraw Winnings",desc:"Go to Wallet → Withdraw. Your winnings reach your account within minutes.",icon:"💰"},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="Beginner's Guide" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{background:gradient,borderRadius:16,padding:"16px 20px",marginBottom:14,textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:6}}>👋</div>
+          <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Welcome to HGNICE!</div>
+          <div style={{color:"rgba(255,255,255,.8)",fontSize:12,marginTop:4}}>Follow these steps to start winning</div>
+        </div>
+        {steps.map((s,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:14,padding:"16px",marginBottom:10,boxShadow:"0 2px 8px #0001",display:"flex",gap:14,alignItems:"flex-start"}}>
+            <div style={{width:40,height:40,borderRadius:12,background:gradient,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:16,flexShrink:0}}>{s.num}</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:14,color:G.text,display:"flex",alignItems:"center",gap:6}}>{s.icon} {s.title}</div>
+              <div style={{fontSize:12,color:G.sub,marginTop:4,lineHeight:1.6}}>{s.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AboutUsScreen({ onBack }) {
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="About Us" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{background:gradient,borderRadius:16,padding:"32px 20px",textAlign:"center",marginBottom:14}}>
+          <div style={{fontSize:44,fontWeight:900,color:"#fff",letterSpacing:2}}><span style={{fontStyle:"italic",color:"#FFE082"}}>H</span>GNICE</div>
+          <div style={{color:"rgba(255,255,255,.8)",fontSize:12,letterSpacing:4,marginTop:4}}>GAMING PLATFORM</div>
+          <div style={{background:"rgba(255,255,255,.2)",borderRadius:20,padding:"4px 16px",display:"inline-block",marginTop:12,color:"#fff",fontSize:12,fontWeight:600}}>Version 1.0.9</div>
+        </div>
+        {[
+          {icon:"🏢",title:"Company",value:"HGNICE Entertainment Ltd."},
+          {icon:"🌍",title:"Region",value:"Bangladesh · Asia"},
+          {icon:"📧",title:"Support Email",value:"support@hgnice.com"},
+          {icon:"💬",title:"Live Chat",value:"Available 24/7"},
+          {icon:"🔒",title:"Security",value:"256-bit SSL Encrypted"},
+          {icon:"⚖️",title:"License",value:"Certified RNG & Fair Play"},
+        ].map((r,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:12,padding:"14px 16px",marginBottom:8,boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:22}}>{r.icon}</span>
+            <div>
+              <div style={{fontSize:11,color:G.sub,fontWeight:600}}>{r.title}</div>
+              <div style={{fontWeight:700,fontSize:13,color:G.text,marginTop:2}}>{r.value}</div>
+            </div>
+          </div>
+        ))}
+        <div style={{textAlign:"center",padding:"20px 0 8px",fontSize:11,color:"#ccc"}}>© 2026 HGNICE. All rights reserved.</div>
+      </div>
+    </div>
+  );
+}
+
+function VIPScreen({ onBack }) {
+  const tiers = [
+    {level:"VIP 0",req:"৳0",weekly:"৳0",badge:"⭐",col:"#888"},
+    {level:"VIP 1",req:"৳1,000",weekly:"৳50",badge:"🥉",col:"#CD7F32"},
+    {level:"VIP 2",req:"৳5,000",weekly:"৳200",badge:"🥈",col:"#C0C0C0"},
+    {level:"VIP 3",req:"৳20,000",weekly:"৳500",badge:"🥇",col:"#FFD700"},
+    {level:"VIP 4",req:"৳100,000",weekly:"৳2,000",badge:"💎",col:"#7C3AED"},
+    {level:"VIP 5",req:"৳500,000",weekly:"৳10,000",badge:"👑",col:"#EF5350"},
+  ];
+  return (
+    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
+      <SubHeader title="VIP Club" onBack={onBack}/>
+      <div style={{padding:"14px"}}>
+        <div style={{background:"linear-gradient(135deg,#1A1A2E,#7C3AED)",borderRadius:16,padding:"24px 20px",textAlign:"center",marginBottom:14}}>
+          <div style={{fontSize:36}}>👑</div>
+          <div style={{color:"#fff",fontWeight:800,fontSize:18,marginTop:8}}>VIP Program</div>
+          <div style={{color:"rgba(255,255,255,.7)",fontSize:12,marginTop:4}}>Earn more as you play more</div>
+          <div style={{background:"rgba(255,255,255,.15)",borderRadius:20,padding:"6px 20px",display:"inline-block",marginTop:12,color:"#FFE082",fontWeight:700,fontSize:13}}>Current: VIP 0 ⭐</div>
+        </div>
+        {tiers.map((t,i)=>(
+          <div key={i} style={{background:"#fff",borderRadius:12,padding:"14px 16px",marginBottom:8,boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:12,opacity:i===0?1:0.75}}>
+            <div style={{fontSize:28,flexShrink:0}}>{t.badge}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,color:t.col}}>{t.level}</div>
+              <div style={{fontSize:11,color:G.sub,marginTop:2}}>Total deposit: {t.req}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:11,color:G.sub}}>Weekly bonus</div>
+              <div style={{fontWeight:800,fontSize:14,color:t.col}}>{t.weekly}</div>
+            </div>
+            {i===0&&<div style={{background:"#EF5350",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10}}>CURRENT</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── BOTTOM NAV (shared) ── */
 function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoProfile, onGoHome }) {
   const navItems = [
@@ -2572,11 +2924,26 @@ function SettingsScreen({ user, onBack }) {
 
 /* ── PROFILE ── */
 const AVATARS = ["🎮","🦊","🐉","🎯","🦁","🤖","👾","🎪","🦸","🧙","🐺","🦅","🐯","🦄","🎭","🎨"];
-function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome }) {
+function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome, myHistory, onLogout }) {
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [subScreen, setSubScreen] = useState(null);
   const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
   const uidNum = useRef(Math.floor(100000 + Math.random() * 900000)).current;
+
+  // Sub-screen routing
+  if (subScreen === "gamehistory") return <GameHistoryScreen onBack={()=>setSubScreen(null)} myHistory={myHistory||[]} />;
+  if (subScreen === "transaction") return <TransactionScreen onBack={()=>setSubScreen(null)} balance={balance} />;
+  if (subScreen === "notification") return <NotificationScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "gifts") return <GiftsScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "stats") return <GameStatsScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "language") return <LanguageScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "feedback") return <FeedbackScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "announcement") return <AnnouncementScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "guide") return <BeginnerGuideScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "about") return <AboutUsScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "vip") return <VIPScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "customerservice") return <SupportChat onClose={()=>setSubScreen(null)} user={user} />;
 
   const menuRow = (icon, label, right, onClick) => (
     <div key={label} onClick={onClick} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #f5f5f5",cursor:"pointer",background:"#fff"}}>
@@ -2632,8 +2999,13 @@ function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNa
         <div style={{color:G.sub,fontSize:12,marginBottom:4}}>Total balance</div>
         <div style={{fontWeight:900,fontSize:26,color:G.text}}>৳{balance.toFixed(2)}</div>
         <div style={{display:"flex",gap:0,marginTop:14,justifyContent:"space-around"}}>
-          {[{icon:"💳",label:"Wallet"},{icon:"📥",label:"Deposit"},{icon:"📤",label:"Withdraw"},{icon:"👑",label:"VIP"}].map(a=>(
-            <div key={a.label} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
+          {[
+            {icon:"💳",label:"Wallet",action:()=>onGoWallet()},
+            {icon:"📥",label:"Deposit",action:()=>onGoWallet()},
+            {icon:"📤",label:"Withdraw",action:()=>onGoWallet()},
+            {icon:"👑",label:"VIP",action:()=>setSubScreen("vip")},
+          ].map(a=>(
+            <div key={a.label} onClick={a.action} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}}>
               <div style={{width:44,height:44,borderRadius:12,background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{a.icon}</div>
               <span style={{fontSize:11,color:G.sub,fontWeight:600}}>{a.label}</span>
             </div>
@@ -2645,39 +3017,25 @@ function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNa
       <div style={{padding:"12px 14px 0"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
           {[
-            {icon:"📊",label:"Game History",sub:"My game records",bg:"#EEF4FF"},
-            {icon:"💱",label:"Transaction",sub:"Transfer history",bg:"#EDFFF5"},
-            {icon:"📥",label:"Deposit",sub:"Deposit history",bg:"#FFF0F0"},
-            {icon:"📤",label:"Withdraw",sub:"Withdrawal history",bg:"#FFF8E1"},
+            {icon:"📊",label:"Game History",sub:"My game records",bg:"#EEF4FF",action:()=>setSubScreen("gamehistory")},
+            {icon:"💱",label:"Transaction",sub:"Transfer history",bg:"#EDFFF5",action:()=>setSubScreen("transaction")},
+            {icon:"📥",label:"Deposit",sub:"Deposit history",bg:"#FFF0F0",action:()=>onGoWallet()},
+            {icon:"📤",label:"Withdraw",sub:"Withdrawal history",bg:"#FFF8E1",action:()=>onGoWallet()},
           ].map(item=>(
-            <div key={item.label} style={{background:"#fff",borderRadius:14,padding:"14px",cursor:"pointer",boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:10}}>
+            <div key={item.label} onClick={item.action} style={{background:"#fff",borderRadius:14,padding:"14px",cursor:"pointer",boxShadow:"0 2px 8px #0001",display:"flex",alignItems:"center",gap:10,transition:"transform .1s"}}
+              onMouseEnter={e=>e.currentTarget.style.transform="scale(1.02)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
               <div style={{width:40,height:40,borderRadius:11,background:item.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{item.icon}</div>
               <div><div style={{fontWeight:700,fontSize:13}}>{item.label}</div><div style={{fontSize:11,color:G.sub}}>{item.sub}</div></div>
             </div>
           ))}
         </div>
 
-        {/* Safe */}
-        <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",boxShadow:"0 2px 8px #0001",marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:44,height:44,borderRadius:12,background:"#FFF8E1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🟡</div>
-            <div>
-              <div style={{fontWeight:700,fontSize:14,color:G.text}}>Safe</div>
-              <div style={{fontSize:11,color:G.sub}}>Half-hour interest rate 0.0%</div>
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{background:gradient,borderRadius:20,padding:"3px 10px",color:"#fff",fontWeight:700,fontSize:12}}>৳0.00</span>
-            <span style={{color:"#ccc",fontSize:16}}>›</span>
-          </div>
-        </div>
-
         {/* Menu rows */}
         <div style={{background:"#fff",borderRadius:14,boxShadow:"0 2px 8px #0001",marginBottom:10,overflow:"hidden"}}>
-          {menuRow("🔔","Notification","")}
-          {menuRow("🎁","Gifts","")}
-          {menuRow("📊","Game Statistics","")}
-          {menuRow("🌐","Language","English")}
+          {menuRow("🔔","Notification","",()=>setSubScreen("notification"))}
+          {menuRow("🎁","Gifts","",()=>setSubScreen("gifts"))}
+          {menuRow("📊","Game Statistics","",()=>setSubScreen("stats"))}
+          {menuRow("🌐","Language","English",()=>setSubScreen("language"))}
         </div>
 
         {/* Service Center */}
@@ -2686,14 +3044,15 @@ function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNa
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"16px 10px",gap:16}}>
             {[
               {icon:"⚙️",label:"Settings",onClick:onGoSettings},
-              {icon:"💬",label:"Feedback"},
-              {icon:"📢",label:"Announcement"},
-              {icon:"🎧",label:"Customer Service"},
-              {icon:"📖",label:"Beginner's Guide"},
-              {icon:"ℹ️",label:"About us"},
+              {icon:"💬",label:"Feedback",onClick:()=>setSubScreen("feedback")},
+              {icon:"📢",label:"Announcement",onClick:()=>setSubScreen("announcement")},
+              {icon:"🎧",label:"Customer Service",onClick:()=>setSubScreen("customerservice")},
+              {icon:"📖",label:"Beginner's Guide",onClick:()=>setSubScreen("guide")},
+              {icon:"ℹ️",label:"About us",onClick:()=>setSubScreen("about")},
             ].map((item,i)=>(
               <div key={i} onClick={item.onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
-                <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{item.icon}</div>
+                <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,transition:"transform .1s"}}
+                  onMouseEnter={e=>e.currentTarget.style.transform="scale(1.1)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>{item.icon}</div>
                 <span style={{fontSize:11,color:G.sub,fontWeight:600,textAlign:"center"}}>{item.label}</span>
               </div>
             ))}
@@ -2715,7 +3074,7 @@ function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNa
           ))}
         </div>
 
-        <button style={{width:"100%",padding:"14px 0",borderRadius:12,border:"1.5px solid #EF5350",background:"#fff",color:"#EF5350",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:8}}>
+        <button onClick={onLogout} style={{width:"100%",padding:"14px 0",borderRadius:12,border:"1.5px solid #EF5350",background:"#fff",color:"#EF5350",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:8}}>
           ⏻ Log Out
         </button>
       </div>
@@ -3700,6 +4059,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [accounts, setAccounts] = useState(null);
   const [balance, setBalance] = useState(1000);
+  const [profileNav, setProfileNav] = useState("account");
   const isPlaying = screen === "wingo" || screen === "aviator" || screen === "trading";
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
@@ -3707,11 +4067,12 @@ export default function App() {
       {screen === "login" && <LoginScreen onLogin={(u) => { setUser(u); setScreen("register"); }} onGotoRegister={() => setScreen("register")} />}
       {screen === "register" && <RegisterScreen onRegister={(u) => { setUser(u); setScreen("deposit"); }} onBack={() => setScreen("login")} />}
       {screen === "deposit" && <DepositSetup contact={user?.contact} onDone={(acc) => { setAccounts(acc); setScreen("home"); }} />}
-      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => setScreen("profile")} onGoWallet={() => setScreen("wallet")} />}
+      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} onGoWallet={() => setScreen("wallet")} />}
       {screen === "wingo" && <WinGoGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "aviator" && <AviatorGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "trading" && <TradingGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
-      {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} />}
+      {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} onGoSettings={() => setScreen("settings")} activeNav={profileNav} setActiveNav={setProfileNav} onGoWallet={() => setScreen("wallet")} onGoHome={() => setScreen("home")} myHistory={[]} onLogout={() => setScreen("login")} />}
+      {screen === "settings" && <SettingsScreen user={user} onBack={() => setScreen("profile")} />}
       {screen === "wallet" && <WalletScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setScreen("home")} />}
       <FloatingHelp show={!isPlaying} user={user} />
     </div>
