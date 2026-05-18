@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
- 
+import React, { useState, useEffect, useRef, useCallback } from "react";
+
 const NUM_COLORS = {
   0: ["red", "violet"],
   1: ["green"],
@@ -37,7 +37,7 @@ const G = {
   sub: "#888",
 };
 const gradient = `linear-gradient(135deg,#EF5350,#FF8A80)`;
- 
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -55,7 +55,7 @@ input:focus{outline:none;}
 button:active{opacity:.85;}
 ::-webkit-scrollbar{width:0;height:0;}
 `;
- 
+
 /* ── BALL ── */
 function Ball({ number, size = 44, selected = false, onClick }) {
   const colors = NUM_COLORS[number];
@@ -144,7 +144,7 @@ function Ball({ number, size = 44, selected = false, onClick }) {
     </div>
   );
 }
- 
+
 /* ── LOGIN ── */
 function LoginScreen({ onLogin, onGotoRegister }) {
   const [method, setMethod] = useState("mobile");
@@ -380,7 +380,7 @@ function LoginScreen({ onLogin, onGotoRegister }) {
     </div>
   );
 }
- 
+
 /* ── REGISTER ── */
 function RegisterScreen({ onRegister, onBack }) {
   const [method, setMethod] = useState("mobile");
@@ -598,7 +598,7 @@ function RegisterScreen({ onRegister, onBack }) {
     </div>
   );
 }
- 
+
 /* ── DEPOSIT SETUP ── */
 function DepositSetup({ contact, onDone }) {
   const [mainNum, setMainNum] = useState("");
@@ -769,7 +769,7 @@ function DepositSetup({ contact, onDone }) {
     </div>
   );
 }
- 
+
 /* ── WINGO ── */
 const MODES = [
   { label: "30s", seconds: 30 },
@@ -777,7 +777,7 @@ const MODES = [
   { label: "3 Min", seconds: 180 },
   { label: "5 Min", seconds: 300 },
 ];
- 
+
 function BetModal({
   type,
   label,
@@ -965,7 +965,7 @@ function BetModal({
     </div>
   );
 }
- 
+
 function WinGoGame({ balance, setBalance, onBack }) {
   const [modeIdx, setModeIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -981,7 +981,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
   const [isLocked, setIsLocked] = useState(false);
   const timerRef = useRef(null);
   const modeSeconds = MODES[modeIdx].seconds;
- 
+
   const resolveRound = useCallback(() => {
     setPendingBets((bets) => {
       const winNum = Math.floor(Math.random() * 10);
@@ -1032,7 +1032,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
       return [];
     });
   }, [currentPeriod]);
- 
+
   useEffect(() => {
     setTimeLeft(modeSeconds);
     clearInterval(timerRef.current);
@@ -1047,19 +1047,19 @@ function WinGoGame({ balance, setBalance, onBack }) {
     }, 1000);
     return () => clearInterval(timerRef.current);
   }, [modeIdx, modeSeconds]);
- 
+
   useEffect(() => {
     setIsLocked(timeLeft <= 5);
   }, [timeLeft]);
- 
+
   const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
   const ss = String(timeLeft % 60).padStart(2, "0");
- 
+
   const openModal = (type, label, color, value) => {
     if (isLocked) return;
     setModal({ type, label, color, value });
   };
- 
+
   return (
     <div
       style={{
@@ -1147,7 +1147,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           ))}
         </div>
       </div>
- 
+
       {/* Game info panel */}
       <div
         style={{
@@ -1235,7 +1235,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       </div>
- 
+
       {/* Bet area */}
       <div
         style={{
@@ -1503,7 +1503,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           </div>
         )}
       </div>
- 
+
       {/* Tabs */}
       <div
         style={{
@@ -1788,7 +1788,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
         )}
       </div>
       <div style={{ height: 24, background: "#fff", margin: "0 10px" }} />
- 
+
       {modal && (
         <BetModal
           {...modal}
@@ -1804,7 +1804,7 @@ function WinGoGame({ balance, setBalance, onBack }) {
           onClose={() => setModal(null)}
         />
       )}
- 
+
       {resultFlash && (
         <div
           style={{
@@ -1846,28 +1846,14 @@ function WinGoGame({ balance, setBalance, onBack }) {
     </div>
   );
 }
- 
+
 /* ══════════════════════════════════════════════════════════════
    AVIATOR GAME — Canvas-based smooth curve
 ══════════════════════════════════════════════════════════════ */
 function genBots() {
   const names = [
-    "0***8",
-    "i***4",
-    "m***u",
-    "i***5",
-    "i***8",
-    "i***1",
-    "i***9",
-    "u***m",
-    "p***r",
-    "k***i",
-    "a***z",
-    "b***7",
-    "c***3",
-    "d***9",
-    "e***5",
-    "f***2",
+    "0***8","i***4","m***u","i***5","i***8","i***1","i***9","u***m",
+    "p***r","k***i","a***z","b***7","c***3","d***9","e***5","f***2",
   ];
   return Array.from({ length: 14 }, (_, i) => {
     const bet = (Math.random() * 900 + 50).toFixed(2);
@@ -1881,7 +1867,7 @@ function genBots() {
     };
   });
 }
- 
+
 function AviatorGame({ balance, setBalance, onBack }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -1889,8 +1875,8 @@ function AviatorGame({ balance, setBalance, onBack }) {
   const crashRef = useRef(null);
   const phaseRef = useRef("waiting");
   const multRef = useRef(1.0);
-  const pointsRef = useRef([]); // stores {t,x,y} for drawn curve
- 
+  const pointsRef = useRef([]);
+
   const [phase, setPhase] = useState("waiting");
   const [mult, setMult] = useState(1.0);
   const [countdown, setCountdown] = useState(5);
@@ -1912,59 +1898,36 @@ function AviatorGame({ balance, setBalance, onBack }) {
   const [betTab2, setBetTab2] = useState("bet");
   const [allBets, setAllBets] = useState(() => genBots());
   const [crashedMult, setCrashedMult] = useState(null);
- 
-  // refs for bet state accessible in RAF
+
   const betPlacedRef = useRef(false);
   const betPlaced2Ref = useRef(false);
   const betAmtRef = useRef(10);
   const betAmt2Ref = useRef(10);
-  useEffect(() => {
-    betPlacedRef.current = betPlaced;
-  }, [betPlaced]);
-  useEffect(() => {
-    betPlaced2Ref.current = betPlaced2;
-  }, [betPlaced2]);
-  useEffect(() => {
-    betAmtRef.current = betAmt;
-  }, [betAmt]);
-  useEffect(() => {
-    betAmt2Ref.current = betAmt2;
-  }, [betAmt2]);
- 
+  useEffect(() => { betPlacedRef.current = betPlaced; }, [betPlaced]);
+  useEffect(() => { betPlaced2Ref.current = betPlaced2; }, [betPlaced2]);
+  useEffect(() => { betAmtRef.current = betAmt; }, [betAmt]);
+  useEffect(() => { betAmt2Ref.current = betAmt2; }, [betAmt2]);
+
   const cashedOutRef = useRef(false);
   const cashedOut2Ref = useRef(false);
   const autoCash1Ref = useRef(0);
   const autoCash2Ref = useRef(0);
-  useEffect(() => {
-    cashedOutRef.current = cashedOut;
-  }, [cashedOut]);
-  useEffect(() => {
-    cashedOut2Ref.current = cashedOut2;
-  }, [cashedOut2]);
-  useEffect(() => {
-    autoCash1Ref.current = autoCash1;
-  }, [autoCash1]);
-  useEffect(() => {
-    autoCash2Ref.current = autoCash2;
-  }, [autoCash2]);
- 
+  useEffect(() => { cashedOutRef.current = cashedOut; }, [cashedOut]);
+  useEffect(() => { cashedOut2Ref.current = cashedOut2; }, [cashedOut2]);
+  useEffect(() => { autoCash1Ref.current = autoCash1; }, [autoCash1]);
+  useEffect(() => { autoCash2Ref.current = autoCash2; }, [autoCash2]);
+
   const mc = (m) =>
     m < 2 ? "#FFD600" : m < 5 ? "#4ADE80" : m < 10 ? "#38BDF8" : "#F472B6";
- 
-  // ── CANVAS DRAW ──────────────────────────────────────────────
+
   const drawFrame = useCallback((canvas, pts, currentMult, ph, cd) => {
     const ctx = canvas.getContext("2d");
-    const W = canvas.width,
-      H = canvas.height;
+    const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
- 
-    // Background: dark with radial rays
     ctx.fillStyle = "#0D0D1A";
     ctx.fillRect(0, 0, W, H);
- 
-    // Sunray lines from bottom-left
-    const ox = W * 0.05,
-      oy = H * 0.98;
+
+    const ox = W * 0.05, oy = H * 0.98;
     const rays = 24;
     for (let i = 0; i < rays; i++) {
       const angle = -Math.PI / 2 + (i / (rays - 1)) * Math.PI * 0.65 - 0.1;
@@ -1976,8 +1939,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.lineWidth = 1;
       ctx.stroke();
     }
- 
-    // Axis dots
+
     const dotCount = 12;
     for (let i = 0; i < dotCount; i++) {
       const dx = W * 0.05 + i * ((W * 0.9) / (dotCount - 1));
@@ -1992,29 +1954,25 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.fillStyle = "rgba(255,255,255,0.15)";
       ctx.fill();
     }
- 
+
     if (ph === "waiting" || ph === "crashed") {
-      // During waiting / crashed: just show the text overlay
       if (ph === "crashed" && pts.length > 1) {
-        // keep old curve visible briefly
         drawCurve(ctx, pts, W, H, "#EF4444");
       }
       return;
     }
- 
+
     if (pts.length < 2) return;
     drawCurve(ctx, pts, W, H, "#EF4444");
- 
-    // Plane at tip
+
     const last = pts[pts.length - 1];
     const prev = pts[pts.length - 2];
     const angle = Math.atan2(last.y - prev.y, last.x - prev.x);
     drawPlane(ctx, last.x, last.y, angle, currentMult);
   }, []);
- 
+
   function drawCurve(ctx, pts, W, H, color) {
     if (pts.length < 2) return;
-    // Glow layer
     ctx.save();
     ctx.shadowColor = color;
     ctx.shadowBlur = 18;
@@ -2027,8 +1985,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.restore();
- 
-    // Filled area under curve
+
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
@@ -2042,8 +1999,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.restore();
- 
-    // Bright core line
+
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
@@ -2051,15 +2007,14 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
- 
+
   function drawPlane(ctx, x, y, angle, m) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
     const sc = 1.3;
     ctx.scale(sc, sc);
- 
-    // Engine fire
+
     ctx.shadowColor = "#FF4400";
     ctx.shadowBlur = 28;
     const fireLen = 18 + Math.random() * 14;
@@ -2077,8 +2032,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.ellipse(-44 - fireLen * 0.7, 0, fireLen * 0.3, 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
- 
-    // Main fuselage
+
     ctx.fillStyle = "#C8000A";
     ctx.beginPath();
     ctx.moveTo(28, 0);
@@ -2087,22 +2041,19 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.bezierCurveTo(-44, 7, -36, 8, -20, 8);
     ctx.bezierCurveTo(0, 10, 20, 7, 28, 0);
     ctx.fill();
- 
-    // Fuselage shine
+
     ctx.fillStyle = "rgba(255,80,80,0.25)";
     ctx.beginPath();
     ctx.ellipse(-5, -5, 18, 4, -0.2, 0, Math.PI * 2);
     ctx.fill();
- 
-    // Nose
+
     ctx.fillStyle = "#A00008";
     ctx.beginPath();
     ctx.moveTo(22, 0);
     ctx.bezierCurveTo(26, -4, 34, -2, 38, 0);
     ctx.bezierCurveTo(34, 2, 26, 4, 22, 0);
     ctx.fill();
- 
-    // Main wing
+
     ctx.fillStyle = "#B8000A";
     ctx.beginPath();
     ctx.moveTo(5, -2);
@@ -2119,8 +2070,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.moveTo(4, -4);
     ctx.lineTo(-10, -24);
     ctx.stroke();
- 
-    // Lower wing stub
+
     ctx.fillStyle = "#900008";
     ctx.beginPath();
     ctx.moveTo(5, 2);
@@ -2130,8 +2080,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(10, 2);
     ctx.closePath();
     ctx.fill();
- 
-    // Tail vertical fin
+
     ctx.fillStyle = "#A00008";
     ctx.beginPath();
     ctx.moveTo(-34, -2);
@@ -2140,8 +2089,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(-28, -2);
     ctx.closePath();
     ctx.fill();
- 
-    // Tail horizontal stabilizer
+
     ctx.fillStyle = "#B0000A";
     ctx.beginPath();
     ctx.moveTo(-32, 2);
@@ -2150,8 +2098,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.lineTo(-30, 4);
     ctx.closePath();
     ctx.fill();
- 
-    // Cockpit
+
     ctx.fillStyle = "#1A2A4A";
     ctx.beginPath();
     ctx.ellipse(8, -5, 9, 5, 0.3, 0, Math.PI * 2);
@@ -2165,14 +2112,12 @@ function AviatorGame({ balance, setBalance, onBack }) {
     ctx.beginPath();
     ctx.ellipse(8, -5, 9, 5, 0.3, 0, Math.PI * 2);
     ctx.stroke();
- 
-    // Propeller hub
+
     ctx.fillStyle = "#880008";
     ctx.beginPath();
     ctx.arc(38, 0, 4, 0, Math.PI * 2);
     ctx.fill();
- 
-    // Spinning propeller blades
+
     const propAngle = (Date.now() / 55) % (Math.PI * 2);
     ctx.save();
     ctx.translate(38, 0);
@@ -2187,97 +2132,70 @@ function AviatorGame({ balance, setBalance, onBack }) {
       ctx.restore();
     }
     ctx.restore();
- 
-    // Propeller blur disc
+
     ctx.fillStyle = "rgba(200,50,50,0.12)";
     ctx.beginPath();
     ctx.arc(38, 0, 15, 0, Math.PI * 2);
     ctx.fill();
- 
+
     ctx.restore();
   }
- 
-  // ── GAME LOOP ────────────────────────────────────────────────
+
   const startRound = useCallback(() => {
-    // Generate crash point
     const r = Math.random();
     let crash;
     if (r < 0.04) crash = 1.0;
-    else
-      crash = parseFloat(
-        Math.max(1.01, (1 / (1 - Math.random())) * 0.97).toFixed(2)
-      );
+    else crash = parseFloat(Math.max(1.01, (1 / (1 - Math.random())) * 0.97).toFixed(2));
     crashRef.current = crash;
     phaseRef.current = "flying";
     multRef.current = 1.0;
     pointsRef.current = [];
     startRef.current = performance.now();
- 
-    // deduct bets
+
     if (betPlacedRef.current) setBalance((b) => b - betAmtRef.current);
     if (betPlaced2Ref.current) setBalance((b) => b - betAmt2Ref.current);
- 
+
     setPhase("flying");
     setMult(1.0);
- 
+
     const canvas = canvasRef.current;
-    const W = canvas ? canvas.width : 460,
-      H = canvas ? canvas.height : 240;
-    const PAD_L = W * 0.07,
-      PAD_B = H - 18,
-      PAD_T = 18,
-      PAD_R = W - 14;
- 
+    const W = canvas ? canvas.width : 460, H = canvas ? canvas.height : 240;
+    const PAD_L = W * 0.07, PAD_B = H - 18, PAD_T = 18, PAD_R = W - 14;
+
     const tick = (now) => {
       if (phaseRef.current !== "flying") return;
       const elapsed = (now - startRef.current) / 1000;
       const m = parseFloat(Math.pow(Math.E, elapsed * 0.09).toFixed(3));
       multRef.current = m;
       setMult(parseFloat(m.toFixed(2)));
- 
-      // Map multiplier to canvas coords using exponential curve
-      // t goes 0→1 as mult goes 1→crashPoint
+
       const maxM = Math.max(crashRef.current * 1.1, 4);
       const t = Math.min((m - 1) / (maxM - 1), 1);
-      // x: linear left→right
       const cx = PAD_L + t * (PAD_R - PAD_L);
-      // y: exponential bottom→top
       const cy = PAD_B - Math.pow(t, 0.7) * (PAD_B - PAD_T);
- 
+
       const pts = pointsRef.current;
       const last = pts[pts.length - 1];
       if (!last || Math.hypot(cx - last.x, cy - last.y) > 3) {
         pointsRef.current = [...pts.slice(-120), { x: cx, y: cy }];
       }
- 
+
       if (canvas) drawFrame(canvas, pointsRef.current, m, "flying", 0);
- 
-      // Auto cash out
-      if (
-        autoCash1Ref.current > 0 &&
-        betPlacedRef.current &&
-        !cashedOutRef.current &&
-        m >= autoCash1Ref.current
-      ) {
+
+      if (autoCash1Ref.current > 0 && betPlacedRef.current && !cashedOutRef.current && m >= autoCash1Ref.current) {
         setBalance((b) => b + betAmtRef.current * m);
         setCashedOut(true);
         cashedOutRef.current = true;
         setCashMult(parseFloat(m.toFixed(2)));
       }
-      if (
-        autoCash2Ref.current > 0 &&
-        betPlaced2Ref.current &&
-        !cashedOut2Ref.current &&
-        m >= autoCash2Ref.current
-      ) {
+      if (autoCash2Ref.current > 0 && betPlaced2Ref.current && !cashedOut2Ref.current && m >= autoCash2Ref.current) {
         setBalance((b) => b + betAmt2Ref.current * m);
         setCashedOut2(true);
         cashedOut2Ref.current = true;
         setCashMult2(parseFloat(m.toFixed(2)));
       }
- 
+
       if (m >= crashRef.current) {
-        // CRASH
         phaseRef.current = "crashed";
         setCrashedMult(crashRef.current);
         setPhase("crashed");
@@ -2306,8 +2224,7 @@ function AviatorGame({ balance, setBalance, onBack }) {
     };
     animRef.current = requestAnimationFrame(tick);
   }, [setBalance]);
- 
-  // Countdown timer
+
   useEffect(() => {
     if (phase !== "waiting") return;
     if (countdown <= 0) {
@@ -2317,21 +2234,15 @@ function AviatorGame({ balance, setBalance, onBack }) {
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [phase, countdown, startRound]);
- 
-  // Redraw on waiting phase (blank + dots)
+
   useEffect(() => {
     if (phase === "waiting" && canvasRef.current) {
       drawFrame(canvasRef.current, [], "1.00", "waiting", countdown);
     }
   }, [phase, countdown]);
- 
-  useEffect(
-    () => () => {
-      cancelAnimationFrame(animRef.current);
-    },
-    []
-  );
- 
+
+  useEffect(() => () => { cancelAnimationFrame(animRef.current); }, []);
+
   const cashOut = (slot) => {
     if (phaseRef.current !== "flying") return;
     const m = multRef.current;
@@ -2348,1012 +2259,206 @@ function AviatorGame({ balance, setBalance, onBack }) {
       setCashMult2(parseFloat(m.toFixed(2)));
     }
   };
- 
-  // ── BET PANEL ────────────────────────────────────────────────
+
   const BetPanel = ({
-    slot,
-    amt,
-    setAmt,
-    placed,
-    setPlaced,
-    cashed,
-    cashM,
-    autoCash,
-    setAutoCash,
-    tab,
-    setTab,
+    slot, amt, setAmt, placed, setPlaced, cashed, cashM,
+    autoCash, setAutoCash, tab, setTab,
   }) => {
     const canBet = !placed && phase === "waiting" && balance >= amt;
     const canCash = placed && !cashed && phase === "flying";
-    const btnBg = canBet
-      ? "#22C55E"
-      : canCash
-      ? "#EF4444"
-      : cashed
-      ? "#1a2a1a"
-      : "#2A2A3A";
-    const btnText = canBet
-      ? `BET\n৳${amt}`
-      : canCash
-      ? `CASH OUT\n৳${(amt * mult).toFixed(2)}`
-      : cashed
-      ? `✓ ${cashM?.toFixed(2)}×`
-      : "Waiting...";
-    const glowColor = canBet
-      ? "#22C55E44"
-      : canCash
-      ? "#EF444466"
-      : "transparent";
+    const btnBg = canBet ? "#22C55E" : canCash ? "#EF4444" : cashed ? "#1a2a1a" : "#2A2A3A";
+    const btnText = canBet ? `BET\n৳${amt}` : canCash ? `CASH OUT\n৳${(amt * mult).toFixed(2)}` : cashed ? `✓ ${cashM?.toFixed(2)}×` : "Waiting...";
+    const glowColor = canBet ? "#22C55E44" : canCash ? "#EF444466" : "transparent";
     return (
-      <div
-        style={{
-          background: "#161622",
-          borderRadius: 14,
-          padding: "12px 10px 14px",
-          border: "1px solid #ffffff0D",
-          flex: 1,
-        }}
-      >
+      <div style={{ background: "#161622", borderRadius: 14, padding: "12px 10px 14px", border: "1px solid #ffffff0D", flex: 1 }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-          <button
-            onClick={() => setTab("bet")}
-            style={{
-              padding: "5px 12px",
-              borderRadius: 20,
-              border: "none",
-              cursor: "pointer",
-              background: tab === "bet" ? "#22C55E22" : "transparent",
-              color: tab === "bet" ? "#22C55E" : "#444",
-              fontWeight: 700,
-              fontSize: 11,
-              fontFamily: "'Poppins',sans-serif",
-            }}
-          >
-            Bet
-          </button>
-          <button
-            onClick={() => setTab("auto")}
-            style={{
-              padding: "5px 12px",
-              borderRadius: 20,
-              border: "none",
-              cursor: "pointer",
-              background: tab === "auto" ? "#FFD60022" : "transparent",
-              color: tab === "auto" ? "#FFD600" : "#444",
-              fontWeight: 700,
-              fontSize: 11,
-              fontFamily: "'Poppins',sans-serif",
-            }}
-          >
-            Auto
-          </button>
+          <button onClick={() => setTab("bet")} style={{ padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer", background: tab === "bet" ? "#22C55E22" : "transparent", color: tab === "bet" ? "#22C55E" : "#444", fontWeight: 700, fontSize: 11, fontFamily: "'Poppins',sans-serif" }}>Bet</button>
+          <button onClick={() => setTab("auto")} style={{ padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer", background: tab === "auto" ? "#FFD60022" : "transparent", color: tab === "auto" ? "#FFD600" : "#444", fontWeight: 700, fontSize: 11, fontFamily: "'Poppins',sans-serif" }}>Auto</button>
         </div>
         {tab === "auto" ? (
           <div>
-            <div
-              style={{
-                color: "#888",
-                fontSize: 11,
-                marginBottom: 6,
-                fontWeight: 600,
-              }}
-            >
-              Auto Cash Out at ×
+            <div style={{ color: "#888", fontSize: 11, marginBottom: 6, fontWeight: 600 }}>Auto Cash Out at ×</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <button onClick={() => setAutoCash((v) => Math.max(0, parseFloat((v - 0.1).toFixed(2))))} disabled={placed} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#2A2A3A", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>−</button>
+              <span style={{ fontWeight: 800, fontSize: 15, color: "#FFD600", flex: 1, textAlign: "center" }}>{autoCash > 0 ? autoCash.toFixed(2) + "×" : "Off"}</span>
+              <button onClick={() => setAutoCash((v) => parseFloat((Math.max(1.1, v) + 0.1).toFixed(2)))} disabled={placed} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#2A2A3A", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>+</button>
             </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 10,
-              }}
-            >
-              <button
-                onClick={() =>
-                  setAutoCash((v) =>
-                    Math.max(0, parseFloat((v - 0.1).toFixed(2)))
-                  )
-                }
-                disabled={placed}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#2A2A3A",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                −
-              </button>
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: 15,
-                  color: "#FFD600",
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                {autoCash > 0 ? autoCash.toFixed(2) + "×" : "Off"}
-              </span>
-              <button
-                onClick={() =>
-                  setAutoCash((v) =>
-                    parseFloat((Math.max(1.1, v) + 0.1).toFixed(2))
-                  )
-                }
-                disabled={placed}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#2A2A3A",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                +
-              </button>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 4,
-                marginBottom: 10,
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 10 }}>
               {[1.5, 2, 5, 10].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setAutoCash(p)}
-                  disabled={placed}
-                  style={{
-                    padding: "5px 0",
-                    borderRadius: 7,
-                    border: "none",
-                    cursor: "pointer",
-                    background: autoCash === p ? "#FFD60033" : "#2A2A3A",
-                    color: autoCash === p ? "#FFD600" : "#888",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily: "'Poppins',sans-serif",
-                  }}
-                >
-                  {p}×
-                </button>
+                <button key={p} onClick={() => setAutoCash(p)} disabled={placed} style={{ padding: "5px 0", borderRadius: 7, border: "none", cursor: "pointer", background: autoCash === p ? "#FFD60033" : "#2A2A3A", color: autoCash === p ? "#FFD600" : "#888", fontSize: 11, fontWeight: 600, fontFamily: "'Poppins',sans-serif" }}>{p}×</button>
               ))}
             </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: "#555",
-                textAlign: "center",
-                marginBottom: 8,
-              }}
-            >
-              Will auto cash out when multiplier reaches target
-            </div>
+            <div style={{ fontSize: 10, color: "#555", textAlign: "center", marginBottom: 8 }}>Will auto cash out when multiplier reaches target</div>
           </div>
         ) : (
           <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 10,
-              }}
-            >
-              <button
-                onClick={() => setAmt((a) => Math.max(1, a - 1))}
-                disabled={placed}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#2A2A3A",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                −
-              </button>
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: 15,
-                  color: "#fff",
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                {amt.toFixed(2)}
-              </span>
-              <button
-                onClick={() => setAmt((a) => a + 1)}
-                disabled={placed}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#2A2A3A",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                +
-              </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <button onClick={() => setAmt((a) => Math.max(1, a - 1))} disabled={placed} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#2A2A3A", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>−</button>
+              <span style={{ fontWeight: 800, fontSize: 15, color: "#fff", flex: 1, textAlign: "center" }}>{amt.toFixed(2)}</span>
+              <button onClick={() => setAmt((a) => a + 1)} disabled={placed} style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#2A2A3A", color: "#fff", cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>+</button>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 4,
-                marginBottom: 10,
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginBottom: 10 }}>
               {[1, 2, 5, 10].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setAmt(p)}
-                  disabled={placed}
-                  style={{
-                    padding: "5px 0",
-                    borderRadius: 7,
-                    border: "none",
-                    cursor: "pointer",
-                    background: "#2A2A3A",
-                    color: "#888",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily: "'Poppins',sans-serif",
-                  }}
-                >
-                  {p}
-                </button>
+                <button key={p} onClick={() => setAmt(p)} disabled={placed} style={{ padding: "5px 0", borderRadius: 7, border: "none", cursor: "pointer", background: "#2A2A3A", color: "#888", fontSize: 11, fontWeight: 600, fontFamily: "'Poppins',sans-serif" }}>{p}</button>
               ))}
             </div>
           </div>
         )}
         <button
-          onClick={() => {
-            if (canBet) setPlaced(true);
-            else if (canCash) cashOut(slot);
-          }}
-          style={{
-            width: "100%",
-            height: 58,
-            borderRadius: 12,
-            border: "none",
-            cursor: "pointer",
-            background: btnBg,
-            color: "#fff",
-            fontWeight: 800,
-            fontSize: 12,
-            lineHeight: 1.5,
-            whiteSpace: "pre-line",
-            boxShadow: `0 4px 20px ${glowColor}`,
-            fontFamily: "'Poppins',sans-serif",
-            animation: canCash ? "multPulse 0.8s infinite" : "none",
-          }}
+          onClick={() => { if (canBet) setPlaced(true); else if (canCash) cashOut(slot); }}
+          style={{ width: "100%", height: 58, borderRadius: 12, border: "none", cursor: "pointer", background: btnBg, color: "#fff", fontWeight: 800, fontSize: 12, lineHeight: 1.5, whiteSpace: "pre-line", boxShadow: `0 4px 20px ${glowColor}`, fontFamily: "'Poppins',sans-serif", animation: canCash ? "multPulse 0.8s infinite" : "none" }}
         >
           {btnText}
         </button>
       </div>
     );
   };
- 
+
   const displayMult = phase === "waiting" ? 1.0 : mult;
-  const multColor =
-    displayMult < 2
-      ? "#ffffff"
-      : displayMult < 5
-      ? "#4ADE80"
-      : displayMult < 10
-      ? "#38BDF8"
-      : "#F472B6";
- 
+  const multColor = displayMult < 2 ? "#ffffff" : displayMult < 5 ? "#4ADE80" : displayMult < 10 ? "#38BDF8" : "#F472B6";
+
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        background: "#0D0D1A",
-        minHeight: "100vh",
-        fontFamily: "'Poppins',sans-serif",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          background: "#0A0A12",
-          padding: "11px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          borderBottom: "1px solid #ffffff0D",
-        }}
-      >
-        <button
-          onClick={onBack}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#aaa",
-            fontSize: 22,
-            cursor: "pointer",
-          }}
-        >
-          ‹
-        </button>
-        <span
-          style={{
-            color: "#EF4444",
-            fontWeight: 900,
-            fontSize: 20,
-            fontStyle: "italic",
-            letterSpacing: 2,
-            textShadow: "0 0 20px #EF444466",
-            fontFamily: "'Orbitron',monospace",
-          }}
-        >
-          AVIATOR
-        </span>
+    <div style={{ maxWidth: 480, margin: "0 auto", background: "#0D0D1A", minHeight: "100vh", fontFamily: "'Poppins',sans-serif", display: "flex", flexDirection: "column" }}>
+      <div style={{ background: "#0A0A12", padding: "11px 16px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid #ffffff0D" }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer" }}>‹</button>
+        <span style={{ color: "#EF4444", fontWeight: 900, fontSize: 20, fontStyle: "italic", letterSpacing: 2, textShadow: "0 0 20px #EF444466", fontFamily: "'Orbitron',monospace" }}>AVIATOR</span>
         <div style={{ flex: 1 }} />
-        <span
-          style={{
-            background: "#22C55E22",
-            borderRadius: 20,
-            padding: "4px 12px",
-            color: "#22C55E",
-            fontWeight: 700,
-            fontSize: 13,
-          }}
-        >
-          ৳{balance.toFixed(2)}
-        </span>
+        <span style={{ background: "#22C55E22", borderRadius: 20, padding: "4px 12px", color: "#22C55E", fontWeight: 700, fontSize: 13 }}>৳{balance.toFixed(2)}</span>
       </div>
- 
-      {/* History pills */}
-      <div
-        style={{
-          display: "flex",
-          gap: 5,
-          padding: "7px 10px",
-          overflowX: "auto",
-          background: "#0A0A12",
-          borderBottom: "1px solid #ffffff08",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ fontSize: 10, color: "#444", flexShrink: 0 }}>
-          History:
-        </span>
+
+      <div style={{ display: "flex", gap: 5, padding: "7px 10px", overflowX: "auto", background: "#0A0A12", borderBottom: "1px solid #ffffff08", alignItems: "center" }}>
+        <span style={{ fontSize: 10, color: "#444", flexShrink: 0 }}>History:</span>
         {history.map((m, i) => (
-          <div
-            key={i}
-            style={{
-              flexShrink: 0,
-              padding: "3px 10px",
-              borderRadius: 16,
-              fontSize: 11,
-              fontWeight: 800,
-              background: "#1A1A28",
-              color: mc(m),
-              border: `1px solid ${mc(m)}22`,
-            }}
-          >
-            {m}×
-          </div>
+          <div key={i} style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 16, fontSize: 11, fontWeight: 800, background: "#1A1A28", color: mc(m), border: `1px solid ${mc(m)}22` }}>{m}×</div>
         ))}
       </div>
- 
-      {/* Canvas area */}
-      <div
-        style={{
-          position: "relative",
-          flexShrink: 0,
-          margin: "8px 8px 0",
-          borderRadius: 16,
-          overflow: "hidden",
-          border: "1px solid #ffffff0A",
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          width={460}
-          height={240}
-          style={{ width: "100%", height: "auto", display: "block" }}
-        />
- 
-        {/* Overlay: multiplier display */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            pointerEvents: "none",
-          }}
-        >
+
+      <div style={{ position: "relative", flexShrink: 0, margin: "8px 8px 0", borderRadius: 16, overflow: "hidden", border: "1px solid #ffffff0A" }}>
+        <canvas ref={canvasRef} width={460} height={240} style={{ width: "100%", height: "auto", display: "block" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", pointerEvents: "none" }}>
           {phase === "waiting" && (
             <>
-              <div
-                style={{
-                  color: "rgba(255,255,255,.5)",
-                  fontSize: 13,
-                  marginBottom: 4,
-                  fontWeight: 600,
-                }}
-              >
-                Starting in
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Orbitron',monospace",
-                  fontSize: 68,
-                  fontWeight: 900,
-                  color: "#FFD600",
-                  textShadow: "0 0 40px #FFD600",
-                  lineHeight: 1,
-                }}
-              >
-                {countdown}
-              </div>
-              {(betPlaced || betPlaced2) && (
-                <div
-                  style={{
-                    color: "#22C55E",
-                    fontSize: 13,
-                    marginTop: 8,
-                    fontWeight: 700,
-                  }}
-                >
-                  ✓ Bet placed — waiting for round
-                </div>
-              )}
+              <div style={{ color: "rgba(255,255,255,.5)", fontSize: 13, marginBottom: 4, fontWeight: 600 }}>Starting in</div>
+              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 68, fontWeight: 900, color: "#FFD600", textShadow: "0 0 40px #FFD600", lineHeight: 1 }}>{countdown}</div>
+              {(betPlaced || betPlaced2) && <div style={{ color: "#22C55E", fontSize: 13, marginTop: 8, fontWeight: 700 }}>✓ Bet placed — waiting for round</div>}
             </>
           )}
           {phase === "flying" && (
             <>
-              <div
-                style={{
-                  fontFamily: "'Orbitron',monospace",
-                  fontSize: 58,
-                  fontWeight: 900,
-                  color: multColor,
-                  textShadow: `0 0 50px ${multColor}`,
-                  lineHeight: 1,
-                  animation: "multPulse 1s infinite",
-                }}
-              >
-                {mult.toFixed(2)}×
-              </div>
+              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 58, fontWeight: 900, color: multColor, textShadow: `0 0 50px ${multColor}`, lineHeight: 1, animation: "multPulse 1s infinite" }}>{mult.toFixed(2)}×</div>
               {(cashedOut || cashedOut2) && (
-                <div
-                  style={{
-                    color: "#22C55E",
-                    fontSize: 13,
-                    marginTop: 8,
-                    fontWeight: 700,
-                    background: "rgba(0,0,0,.5)",
-                    padding: "4px 14px",
-                    borderRadius: 20,
-                  }}
-                >
-                  ✓ Cashed{" "}
-                  {[cashedOut && cashMult, cashedOut2 && cashMult2]
-                    .filter(Boolean)
-                    .join(", ")}
-                  ×
+                <div style={{ color: "#22C55E", fontSize: 13, marginTop: 8, fontWeight: 700, background: "rgba(0,0,0,.5)", padding: "4px 14px", borderRadius: 20 }}>
+                  ✓ Cashed {[cashedOut && cashMult, cashedOut2 && cashMult2].filter(Boolean).join(", ")}×
                 </div>
               )}
             </>
           )}
           {phase === "crashed" && (
             <div style={{ animation: "crashShake .5s ease" }}>
-              <div
-                style={{
-                  fontFamily: "'Orbitron',monospace",
-                  fontSize: 44,
-                  fontWeight: 900,
-                  color: "#EF4444",
-                  textShadow: "0 0 40px #EF4444",
-                  lineHeight: 1,
-                  textAlign: "center",
-                }}
-              >
-                FLEW AWAY!
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Orbitron',monospace",
-                  fontSize: 26,
-                  color: "#FF6666",
-                  textAlign: "center",
-                  marginTop: 4,
-                }}
-              >
-                {crashedMult}×
-              </div>
+              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 44, fontWeight: 900, color: "#EF4444", textShadow: "0 0 40px #EF4444", lineHeight: 1, textAlign: "center" }}>FLEW AWAY!</div>
+              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 26, color: "#FF6666", textAlign: "center", marginTop: 4 }}>{crashedMult}×</div>
             </div>
           )}
         </div>
- 
-        {/* Live players */}
         {phase === "flying" && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 10,
-              right: 12,
-              background: "rgba(0,0,0,.7)",
-              backdropFilter: "blur(6px)",
-              borderRadius: 20,
-              padding: "4px 10px",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: 11,
-              color: "#fff",
-              border: "1px solid #ffffff10",
-            }}
-          >
+          <div style={{ position: "absolute", bottom: 10, right: 12, background: "rgba(0,0,0,.7)", backdropFilter: "blur(6px)", borderRadius: 20, padding: "4px 10px", display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#fff", border: "1px solid #ffffff10" }}>
             <span>👥</span>
-            <span style={{ fontWeight: 700, color: "#FFD600" }}>
-              {Math.floor(mult * 1234 + 3200).toLocaleString()}
-            </span>
+            <span style={{ fontWeight: 700, color: "#FFD600" }}>{Math.floor(mult * 1234 + 3200).toLocaleString()}</span>
           </div>
         )}
       </div>
- 
-      {/* Bet panels */}
+
       <div style={{ padding: "8px 8px 6px", display: "flex", gap: 8 }}>
-        <BetPanel
-          slot={1}
-          amt={betAmt}
-          setAmt={setBetAmt}
-          placed={betPlaced}
-          setPlaced={setBetPlaced}
-          cashed={cashedOut}
-          cashM={cashMult}
-          autoCash={autoCash1}
-          setAutoCash={setAutoCash1}
-          tab={betTab1}
-          setTab={setBetTab1}
-        />
-        <BetPanel
-          slot={2}
-          amt={betAmt2}
-          setAmt={setBetAmt2}
-          placed={betPlaced2}
-          setPlaced={setBetPlaced2}
-          cashed={cashedOut2}
-          cashM={cashMult2}
-          autoCash={autoCash2}
-          setAutoCash={setAutoCash2}
-          tab={betTab2}
-          setTab={setBetTab2}
-        />
+        <BetPanel slot={1} amt={betAmt} setAmt={setBetAmt} placed={betPlaced} setPlaced={setBetPlaced} cashed={cashedOut} cashM={cashMult} autoCash={autoCash1} setAutoCash={setAutoCash1} tab={betTab1} setTab={setBetTab1} />
+        <BetPanel slot={2} amt={betAmt2} setAmt={setBetAmt2} placed={betPlaced2} setPlaced={setBetPlaced2} cashed={cashedOut2} cashM={cashMult2} autoCash={autoCash2} setAutoCash={setAutoCash2} tab={betTab2} setTab={setBetTab2} />
       </div>
- 
-      {/* All bets table */}
-      <div
-        style={{
-          margin: "0 8px 8px",
-          background: "#111120",
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "1px solid #ffffff08",
-          flex: 1,
-        }}
-      >
+
+      <div style={{ margin: "0 8px 8px", background: "#111120", borderRadius: 14, overflow: "hidden", border: "1px solid #ffffff08", flex: 1 }}>
         <div style={{ display: "flex", borderBottom: "1px solid #ffffff0A" }}>
           {["allbets", "mybets", "top"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 700,
-                background: "transparent",
-                color: activeTab === t ? "#fff" : "#444",
-                borderBottom:
-                  activeTab === t
-                    ? "2px solid #EF4444"
-                    : "2px solid transparent",
-                fontFamily: "'Poppins',sans-serif",
-              }}
-            >
-              {t === "allbets"
-                ? "All Bets"
-                : t === "mybets"
-                ? "My Bets"
-                : "Top"}
+            <button key={t} onClick={() => setActiveTab(t)} style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: "transparent", color: activeTab === t ? "#fff" : "#444", borderBottom: activeTab === t ? "2px solid #EF4444" : "2px solid transparent", fontFamily: "'Poppins',sans-serif" }}>
+              {t === "allbets" ? "All Bets" : t === "mybets" ? "My Bets" : "Top"}
             </button>
           ))}
         </div>
-        <div
-          style={{ padding: "8px 10px 4px", overflowY: "auto", maxHeight: 200 }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.6fr 1.2fr .8fr 1.2fr",
-              marginBottom: 6,
-              padding: "0 4px",
-            }}
-          >
+        <div style={{ padding: "8px 10px 4px", overflowY: "auto", maxHeight: 200 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr .8fr 1.2fr", marginBottom: 6, padding: "0 4px" }}>
             {["Player", "Bet ৳", "×", "Won ৳"].map((h) => (
-              <span
-                key={h}
-                style={{ fontSize: 10, color: "#444", fontWeight: 600 }}
-              >
-                {h}
-              </span>
+              <span key={h} style={{ fontSize: 10, color: "#444", fontWeight: 600 }}>{h}</span>
             ))}
           </div>
           {allBets.map((b, i) => (
-            <div
-              key={i}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1.6fr 1.2fr .8fr 1.2fr",
-                padding: "6px 4px",
-                borderTop: "1px solid #ffffff05",
-                alignItems: "center",
-              }}
-            >
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr .8fr 1.2fr", padding: "6px 4px", borderTop: "1px solid #ffffff05", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <div
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background: `hsl(${i * 37 + 20},55%,30%)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 11,
-                    flexShrink: 0,
-                  }}
-                >
-                  {"🎭🎨🎯🎮🎲🃏🎪🎸🦊🦁"[i % 10]}
-                </div>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: `hsl(${i * 37 + 20},55%,30%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>{"🎭🎨🎯🎮🎲🃏🎪🎸🦊🦁"[i % 10]}</div>
                 <span style={{ fontSize: 11, color: "#777" }}>{b.name}</span>
               </div>
-              <span style={{ fontSize: 11, color: "#888" }}>
-                {b.bet.toFixed(2)}
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: b.flying ? "#333" : mc(b.x),
-                }}
-              >
-                {b.flying ? "—" : b.x + "×"}
-              </span>
-              <span style={{ fontSize: 11, color: b.flying ? "#333" : "#bbb" }}>
-                {b.flying ? "—" : b.won}
-              </span>
+              <span style={{ fontSize: 11, color: "#888" }}>{b.bet.toFixed(2)}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: b.flying ? "#333" : mc(b.x) }}>{b.flying ? "—" : b.x + "×"}</span>
+              <span style={{ fontSize: 11, color: b.flying ? "#333" : "#bbb" }}>{b.flying ? "—" : b.won}</span>
             </div>
           ))}
-          <div
-            style={{
-              textAlign: "center",
-              padding: "8px 0 4px",
-              fontSize: 10,
-              color: "#333",
-            }}
-          >
-            🛡️ Provably Fair
-          </div>
+          <div style={{ textAlign: "center", padding: "8px 0 4px", fontSize: 10, color: "#333" }}>🛡️ Provably Fair</div>
         </div>
       </div>
     </div>
   );
 }
- 
+
 /* ── HOME ── */
 const GAMES = [
-  {
-    id: "wingo",
-    name: "Win Go",
-    desc: "Guess Number · Green/Red/Violet",
-    emoji: "🔮",
-    bg: "linear-gradient(135deg,#EF5350,#FF8A80)",
-  },
-  {
-    id: "aviator",
-    name: "Aviator",
-    desc: "Cash out before it flies away!",
-    emoji: "✈️",
-    bg: "linear-gradient(135deg,#0F0F2A,#3949AB)",
-  },
-  {
-    id: "k3",
-    name: "K3",
-    desc: "Guess Number · Big/Small/Odd/Even",
-    emoji: "🎲",
-    bg: "linear-gradient(135deg,#F97316,#FBBF24)",
-    soon: true,
-  },
-  {
-    id: "5d",
-    name: "5D",
-    desc: "Guess Number · Big/Small/Odd/Even",
-    emoji: "🎯",
-    bg: "linear-gradient(135deg,#22C55E,#16A34A)",
-    soon: true,
-  },
-  {
-    id: "trx",
-    name: "Trx Win",
-    desc: "Guess Number · Green/Red/Violet",
-    emoji: "💎",
-    bg: "linear-gradient(135deg,#7C3AED,#A855F7)",
-    soon: true,
-  },
-  {
-    id: "trading",
-    name: "FX Trader",
-    desc: "Trade USD/JPY · EUR/USD · GBP/USD · XAU/USD",
-    emoji: "📈",
-    bg: "linear-gradient(135deg,#0F2027,#203A43,#2C5364)",
-  },
+  { id: "wingo", name: "Win Go", desc: "Guess Number · Green/Red/Violet", emoji: "🔮", bg: "linear-gradient(135deg,#EF5350,#FF8A80)" },
+  { id: "aviator", name: "Aviator", desc: "Cash out before it flies away!", emoji: "✈️", bg: "linear-gradient(135deg,#0F0F2A,#3949AB)" },
+  { id: "k3", name: "K3", desc: "Guess Number · Big/Small/Odd/Even", emoji: "🎲", bg: "linear-gradient(135deg,#F97316,#FBBF24)", soon: true },
+  { id: "5d", name: "5D", desc: "Guess Number · Big/Small/Odd/Even", emoji: "🎯", bg: "linear-gradient(135deg,#22C55E,#16A34A)", soon: true },
+  { id: "trx", name: "Trx Win", desc: "Guess Number · Green/Red/Violet", emoji: "💎", bg: "linear-gradient(135deg,#7C3AED,#A855F7)", soon: true },
+  { id: "trading", name: "FX Trader", desc: "Trade USD/JPY · EUR/USD · GBP/USD · XAU/USD", emoji: "📈", bg: "linear-gradient(135deg,#0F2027,#203A43,#2C5364)" },
 ];
- 
+
 function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
   const [activeNav, setActiveNav] = useState("home");
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        background: "#F4F4F8",
-        minHeight: "100vh",
-        fontFamily: "'Poppins',sans-serif",
-        paddingBottom: 80,
-      }}
-    >
+    <div style={{ maxWidth: 480, margin: "0 auto", background: "#F4F4F8", minHeight: "100vh", fontFamily: "'Poppins',sans-serif", paddingBottom: 80 }}>
       <div style={{ background: gradient, padding: "16px 20px 24px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 900,
-              color: "#fff",
-              letterSpacing: 1,
-            }}
-          >
-            <span style={{ fontStyle: "italic", color: "#FFE082" }}>H</span>
-            GNICE
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#fff", letterSpacing: 1 }}>
+            <span style={{ fontStyle: "italic", color: "#FFE082" }}>H</span>GNICE
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <div
-              style={{
-                background: "rgba(255,255,255,.2)",
-                borderRadius: 20,
-                padding: "5px 12px",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 13,
-              }}
-            >
-              ৳{balance.toFixed(2)}
-            </div>
-            <div
-              onClick={onGoProfile}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontSize: 20,
-              }}
-            >
-              🎮
-            </div>
+            <div style={{ background: "rgba(255,255,255,.2)", borderRadius: 20, padding: "5px 12px", color: "#fff", fontWeight: 700, fontSize: 13 }}>৳{balance.toFixed(2)}</div>
+            <div onClick={onGoProfile} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.25)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 20 }}>🎮</div>
           </div>
         </div>
-        <div
-          style={{
-            background: "rgba(255,255,255,.15)",
-            borderRadius: 16,
-            padding: "16px",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div
-            style={{
-              color: "rgba(255,255,255,.7)",
-              fontSize: 12,
-              marginBottom: 2,
-            }}
-          >
-            Total Balance
-          </div>
-          <div
-            style={{
-              color: "#fff",
-              fontSize: 32,
-              fontWeight: 900,
-              marginBottom: 12,
-            }}
-          >
-            ৳{balance.toFixed(2)}
-          </div>
+        <div style={{ background: "rgba(255,255,255,.15)", borderRadius: 16, padding: "16px", backdropFilter: "blur(10px)" }}>
+          <div style={{ color: "rgba(255,255,255,.7)", fontSize: 12, marginBottom: 2 }}>Total Balance</div>
+          <div style={{ color: "#fff", fontSize: 32, fontWeight: 900, marginBottom: 12 }}>৳{balance.toFixed(2)}</div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button
-              onClick={onGoWallet}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: 10,
-                border: "none",
-                background: "rgba(255,255,255,.25)",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-                fontFamily: "'Poppins',sans-serif",
-              }}
-            >
-              + Deposit
-            </button>
-            <button
-              onClick={onGoWallet}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: 10,
-                border: "1.5px solid rgba(255,255,255,.5)",
-                background: "transparent",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-                fontFamily: "'Poppins',sans-serif",
-              }}
-            >
-              ↓ Withdraw
-            </button>
+            <button onClick={onGoWallet} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "rgba(255,255,255,.25)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>+ Deposit</button>
+            <button onClick={onGoWallet} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid rgba(255,255,255,.5)", background: "transparent", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>↓ Withdraw</button>
           </div>
         </div>
       </div>
       <div style={{ padding: "18px 14px 0" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 14,
-          }}
-        >
-          <div
-            style={{ width: 4, height: 20, background: G.red, borderRadius: 2 }}
-          />
-          <span style={{ fontWeight: 800, fontSize: 16, color: G.text }}>
-            Lottery
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 4, height: 20, background: G.red, borderRadius: 2 }} />
+          <span style={{ fontWeight: 800, fontSize: 16, color: G.text }}>Lottery</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {GAMES.map((g) => (
-            <div
-              key={g.id}
-              onClick={() => !g.soon && onSelectGame(g.id)}
-              style={{
-                background: g.bg,
-                borderRadius: 16,
-                padding: "18px 20px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                cursor: g.soon ? "default" : "pointer",
-                boxShadow: "0 4px 16px #0002",
-                transition: "transform .15s",
-              }}
-              onMouseEnter={(e) => {
-                if (!g.soon) e.currentTarget.style.transform = "scale(1.02)";
-              }}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.transform = "scale(1)")
-              }
-            >
+            <div key={g.id} onClick={() => !g.soon && onSelectGame(g.id)} style={{ background: g.bg, borderRadius: 16, padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: g.soon ? "default" : "pointer", boxShadow: "0 4px 16px #0002", transition: "transform .15s" }}
+              onMouseEnter={(e) => { if (!g.soon) e.currentTarget.style.transform = "scale(1.02)"; }}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}>
               <div>
-                <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>
-                  {g.name}
-                </div>
-                <div
-                  style={{
-                    color: "rgba(255,255,255,.8)",
-                    fontSize: 12,
-                    marginTop: 2,
-                  }}
-                >
-                  {g.desc}
-                </div>
-                {g.soon && (
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,.5)",
-                      fontSize: 11,
-                      marginTop: 4,
-                      background: "rgba(0,0,0,.2)",
-                      display: "inline-block",
-                      padding: "2px 8px",
-                      borderRadius: 10,
-                    }}
-                  >
-                    Coming soon
-                  </div>
-                )}
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{g.name}</div>
+                <div style={{ color: "rgba(255,255,255,.8)", fontSize: 12, marginTop: 2 }}>{g.desc}</div>
+                {g.soon && <div style={{ color: "rgba(255,255,255,.5)", fontSize: 11, marginTop: 4, background: "rgba(0,0,0,.2)", display: "inline-block", padding: "2px 8px", borderRadius: 10 }}>Coming soon</div>}
               </div>
               <div style={{ fontSize: 44 }}>{g.emoji}</div>
             </div>
           ))}
         </div>
       </div>
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "100%",
-          maxWidth: 480,
-          background: "#fff",
-          borderTop: "1px solid #f0f0f0",
-          display: "flex",
-          zIndex: 100,
-        }}
-      >
+      <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, background: "#fff", borderTop: "1px solid #f0f0f0", display: "flex", zIndex: 100 }}>
         {[
           { id: "home", icon: "🏠", label: "Home" },
           { id: "activity", icon: "🎁", label: "Activity" },
@@ -3361,27 +2466,7 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
           { id: "wallet", icon: "👛", label: "Wallet" },
           { id: "account", icon: "👤", label: "Account" },
         ].map((n) => (
-          <button
-            key={n.id}
-            onClick={() => {
-              setActiveNav(n.id);
-              if (n.id === "wallet") onGoWallet();
-              if (n.id === "account") onGoProfile();
-            }}
-            style={{
-              flex: 1,
-              padding: "10px 0 6px",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              color: activeNav === n.id ? G.red : "#aaa",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 2,
-              fontFamily: "'Poppins',sans-serif",
-            }}
-          >
+          <button key={n.id} onClick={() => { setActiveNav(n.id); if (n.id === "wallet") onGoWallet(); if (n.id === "account") onGoProfile(); }} style={{ flex: 1, padding: "10px 0 6px", border: "none", background: "transparent", cursor: "pointer", color: activeNav === n.id ? G.red : "#aaa", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontFamily: "'Poppins',sans-serif" }}>
             <span style={{ fontSize: 20 }}>{n.icon}</span>
             <span style={{ fontSize: 11, fontWeight: 600 }}>{n.label}</span>
           </button>
@@ -3390,477 +2475,100 @@ function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet }) {
     </div>
   );
 }
- 
+
 /* ── PROFILE ── */
-const AVATARS = [
-  "🎮",
-  "🦊",
-  "🐉",
-  "🎯",
-  "🦁",
-  "🤖",
-  "👾",
-  "🎪",
-  "🦸",
-  "🧙",
-  "🐺",
-  "🦅",
-  "🐯",
-  "🦄",
-  "🎭",
-  "🎨",
-];
+const AVATARS = ["🎮","🦊","🐉","🎯","🦁","🤖","👾","🎪","🦸","🧙","🐺","🦅","🐯","🦄","🎭","🎨"];
 function ProfileScreen({ user, balance, accounts, onBack }) {
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const username =
-    (user?.contact?.includes("@")
-      ? user.contact.split("@")[0]
-      : user?.contact) || "Member";
+  const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
   const uidNum = useRef(Math.floor(100000 + Math.random() * 900000)).current;
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        background: "#F4F4F8",
-        minHeight: "100vh",
-        fontFamily: "'Poppins',sans-serif",
-        paddingBottom: 20,
-      }}
-    >
-      <div
-        style={{
-          background: gradient,
-          padding: "0 0 32px",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "14px 20px",
-          }}
-        >
-          <button
-            onClick={onBack}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#fff",
-              fontSize: 22,
-              cursor: "pointer",
-            }}
-          >
-            ‹
-          </button>
-          <span
-            style={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 16,
-              flex: 1,
-              textAlign: "center",
-            }}
-          >
-            My Account
-          </span>
+    <div style={{ maxWidth: 480, margin: "0 auto", background: "#F4F4F8", minHeight: "100vh", fontFamily: "'Poppins',sans-serif", paddingBottom: 20 }}>
+      <div style={{ background: gradient, padding: "0 0 32px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "14px 20px" }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#fff", fontSize: 22, cursor: "pointer" }}>‹</button>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, flex: 1, textAlign: "center" }}>My Account</span>
           <div style={{ width: 30 }} />
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            padding: "0 20px",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px" }}>
           <div style={{ position: "relative" }}>
-            <div
-              onClick={() => setShowAvatarPicker(true)}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 38,
-                border: "3px solid rgba(255,255,255,.6)",
-                cursor: "pointer",
-              }}
-            >
-              {AVATARS[avatarIdx]}
-            </div>
-            <div
-              onClick={() => setShowAvatarPicker(true)}
-              style={{
-                position: "absolute",
-                bottom: -1,
-                right: -1,
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: "#FFE082",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#333",
-              }}
-            >
-              ✎
-            </div>
+            <div onClick={() => setShowAvatarPicker(true)} style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 38, border: "3px solid rgba(255,255,255,.6)", cursor: "pointer" }}>{AVATARS[avatarIdx]}</div>
+            <div onClick={() => setShowAvatarPicker(true)} style={{ position: "absolute", bottom: -1, right: -1, width: 22, height: 22, borderRadius: "50%", background: "#FFE082", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#333" }}>✎</div>
           </div>
           <div>
-            <div
-              style={{
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 18,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}>
               {username.toUpperCase()}
-              <span
-                style={{
-                  background: "rgba(255,255,255,.2)",
-                  borderRadius: 10,
-                  padding: "2px 8px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                }}
-              >
-                ⭐ VIP0
-              </span>
+              <span style={{ background: "rgba(255,255,255,.2)", borderRadius: 10, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>⭐ VIP0</span>
             </div>
-            <div
-              style={{
-                color: "rgba(255,255,255,.7)",
-                fontSize: 12,
-                marginTop: 3,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <span
-                style={{
-                  background: "rgba(0,0,0,.2)",
-                  borderRadius: 8,
-                  padding: "2px 10px",
-                  fontSize: 11,
-                }}
-              >
-                UID | {uidNum}
-              </span>
+            <div style={{ color: "rgba(255,255,255,.7)", fontSize: 12, marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ background: "rgba(0,0,0,.2)", borderRadius: 8, padding: "2px 10px", fontSize: 11 }}>UID | {uidNum}</span>
               <span style={{ cursor: "pointer" }}>📋</span>
             </div>
-            <div
-              style={{
-                color: "rgba(255,255,255,.55)",
-                fontSize: 11,
-                marginTop: 4,
-              }}
-            >
-              {user?.method === "mobile" ? "📱" : "📧"} {user?.contact}
-            </div>
+            <div style={{ color: "rgba(255,255,255,.55)", fontSize: 11, marginTop: 4 }}>{user?.method === "mobile" ? "📱" : "📧"} {user?.contact}</div>
           </div>
         </div>
       </div>
       {showAvatarPicker && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "#0009",
-            zIndex: 400,
-            display: "flex",
-            alignItems: "flex-end",
-          }}
-          onClick={() => setShowAvatarPicker(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 480,
-              margin: "0 auto",
-              background: "#1A1A2E",
-              borderRadius: "20px 20px 0 0",
-              padding: 20,
-              animation: "slideUp .3s ease",
-            }}
-          >
-            <div
-              style={{
-                color: "#fff",
-                fontWeight: 700,
-                marginBottom: 14,
-                textAlign: "center",
-              }}
-            >
-              Choose Avatar
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(8,1fr)",
-                gap: 10,
-              }}
-            >
+        <div style={{ position: "fixed", inset: 0, background: "#0009", zIndex: 400, display: "flex", alignItems: "flex-end" }} onClick={() => setShowAvatarPicker(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: "#1A1A2E", borderRadius: "20px 20px 0 0", padding: 20, animation: "slideUp .3s ease" }}>
+            <div style={{ color: "#fff", fontWeight: 700, marginBottom: 14, textAlign: "center" }}>Choose Avatar</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 10 }}>
               {AVATARS.map((a, i) => (
-                <div
-                  key={i}
-                  onClick={() => {
-                    setAvatarIdx(i);
-                    setShowAvatarPicker(false);
-                  }}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    background: avatarIdx === i ? "#EF5350" : "#2A2A40",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 22,
-                    cursor: "pointer",
-                    border:
-                      avatarIdx === i
-                        ? "2px solid #fff"
-                        : "2px solid transparent",
-                  }}
-                >
-                  {a}
-                </div>
+                <div key={i} onClick={() => { setAvatarIdx(i); setShowAvatarPicker(false); }} style={{ width: 40, height: 40, borderRadius: "50%", background: avatarIdx === i ? "#EF5350" : "#2A2A40", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer", border: avatarIdx === i ? "2px solid #fff" : "2px solid transparent" }}>{a}</div>
               ))}
             </div>
           </div>
         </div>
       )}
-      <div
-        style={{
-          background: "#fff",
-          margin: "0 14px",
-          marginTop: -16,
-          borderRadius: 16,
-          padding: "16px",
-          boxShadow: "0 4px 20px #0001",
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div style={{ color: G.sub, fontSize: 12, marginBottom: 4 }}>
-          Total balance
-        </div>
-        <div style={{ fontWeight: 900, fontSize: 26, color: G.text }}>
-          ৳{balance.toFixed(2)}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: 0,
-            marginTop: 14,
-            justifyContent: "space-around",
-          }}
-        >
-          {[
-            { icon: "💳", label: "Wallet" },
-            { icon: "📥", label: "Deposit" },
-            { icon: "📤", label: "Withdraw" },
-            { icon: "👑", label: "VIP" },
-          ].map((a) => (
-            <div
-              key={a.label}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 4,
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: "#FFF0F0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20,
-                }}
-              >
-                {a.icon}
-              </div>
-              <span style={{ fontSize: 11, color: G.sub, fontWeight: 600 }}>
-                {a.label}
-              </span>
+      <div style={{ background: "#fff", margin: "0 14px", marginTop: -16, borderRadius: 16, padding: "16px", boxShadow: "0 4px 20px #0001", position: "relative", zIndex: 10 }}>
+        <div style={{ color: G.sub, fontSize: 12, marginBottom: 4 }}>Total balance</div>
+        <div style={{ fontWeight: 900, fontSize: 26, color: G.text }}>৳{balance.toFixed(2)}</div>
+        <div style={{ display: "flex", gap: 0, marginTop: 14, justifyContent: "space-around" }}>
+          {[{ icon: "💳", label: "Wallet" }, { icon: "📥", label: "Deposit" }, { icon: "📤", label: "Withdraw" }, { icon: "👑", label: "VIP" }].map((a) => (
+            <div key={a.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: "#FFF0F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{a.icon}</div>
+              <span style={{ fontSize: 11, color: G.sub, fontWeight: 600 }}>{a.label}</span>
             </div>
           ))}
         </div>
       </div>
       <div style={{ padding: "12px 14px 0" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 10,
-            marginBottom: 10,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
           {[
-            {
-              icon: "📊",
-              label: "Game History",
-              sub: "My game records",
-              bg: "#EEF4FF",
-            },
-            {
-              icon: "💱",
-              label: "Transaction",
-              sub: "Transfer history",
-              bg: "#EDFFF5",
-            },
-            {
-              icon: "📥",
-              label: "Deposit",
-              sub: "Deposit history",
-              bg: "#FFF0F0",
-            },
-            {
-              icon: "📤",
-              label: "Withdraw",
-              sub: "Withdrawal history",
-              bg: "#FFF8E1",
-            },
+            { icon: "📊", label: "Game History", sub: "My game records", bg: "#EEF4FF" },
+            { icon: "💱", label: "Transaction", sub: "Transfer history", bg: "#EDFFF5" },
+            { icon: "📥", label: "Deposit", sub: "Deposit history", bg: "#FFF0F0" },
+            { icon: "📤", label: "Withdraw", sub: "Withdrawal history", bg: "#FFF8E1" },
           ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                background: "#fff",
-                borderRadius: 14,
-                padding: "14px",
-                cursor: "pointer",
-                boxShadow: "0 2px 8px #0001",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 11,
-                  background: item.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20,
-                }}
-              >
-                {item.icon}
-              </div>
+            <div key={item.label} style={{ background: "#fff", borderRadius: 14, padding: "14px", cursor: "pointer", boxShadow: "0 2px 8px #0001", display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{item.icon}</div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>
-                  {item.label}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>{item.label}</div>
                 <div style={{ fontSize: 11, color: G.sub }}>{item.sub}</div>
               </div>
             </div>
           ))}
         </div>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 14,
-            padding: "16px",
-            boxShadow: "0 2px 8px #0001",
-            marginBottom: 10,
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 14,
-              marginBottom: 10,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            💳 Payment Accounts
-          </div>
-          <div
-            style={{
-              background: "#FFF8E1",
-              borderRadius: 10,
-              padding: "12px",
-              marginBottom: 8,
-              border: "1px solid #FFE082",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                color: "#E65100",
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Main Account (permanent)
-            </div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: G.text }}>
-              {accounts?.main || "Not configured"}
-            </div>
+        <div style={{ background: "#fff", borderRadius: 14, padding: "16px", boxShadow: "0 2px 8px #0001", marginBottom: 10 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>💳 Payment Accounts</div>
+          <div style={{ background: "#FFF8E1", borderRadius: 10, padding: "12px", marginBottom: 8, border: "1px solid #FFE082" }}>
+            <div style={{ fontSize: 11, color: "#E65100", fontWeight: 600, marginBottom: 4 }}>Main Account (permanent)</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: G.text }}>{accounts?.main || "Not configured"}</div>
           </div>
           {accounts?.extras?.filter(Boolean).map((e, i) => (
-            <div
-              key={i}
-              style={{
-                background: "#f5f5f5",
-                borderRadius: 10,
-                padding: "10px 12px",
-                marginBottom: 6,
-              }}
-            >
-              <div style={{ fontSize: 11, color: G.sub, marginBottom: 2 }}>
-                Withdrawal #{i + 2}
-              </div>
+            <div key={i} style={{ background: "#f5f5f5", borderRadius: 10, padding: "10px 12px", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: G.sub, marginBottom: 2 }}>Withdrawal #{i + 2}</div>
               <div style={{ fontWeight: 600, color: G.text }}>{e}</div>
             </div>
           ))}
         </div>
-        <button
-          style={{
-            width: "100%",
-            padding: "14px 0",
-            borderRadius: 12,
-            border: "none",
-            background: "#FFF0F0",
-            color: "#EF5350",
-            fontWeight: 700,
-            fontSize: 14,
-            cursor: "pointer",
-            fontFamily: "'Poppins',sans-serif",
-          }}
-        >
-          🚪 Log Out
-        </button>
+        <button style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", background: "#FFF0F0", color: "#EF5350", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>🚪 Log Out</button>
       </div>
     </div>
   );
 }
- 
+
 /* ── WALLET ── */
 function WalletScreen({ balance, setBalance, accounts, onBack }) {
   const [tab, setTab] = useState("deposit");
@@ -3884,220 +2592,42 @@ function WalletScreen({ balance, setBalance, accounts, onBack }) {
     setTimeout(() => setDone(""), 3000);
   };
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        background: "#F4F4F8",
-        minHeight: "100vh",
-        fontFamily: "'Poppins',sans-serif",
-      }}
-    >
+    <div style={{ maxWidth: 480, margin: "0 auto", background: "#F4F4F8", minHeight: "100vh", fontFamily: "'Poppins',sans-serif" }}>
       <div style={{ background: gradient, padding: "0 0 24px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "14px 20px",
-          }}
-        >
-          <button
-            onClick={onBack}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#fff",
-              fontSize: 22,
-              cursor: "pointer",
-            }}
-          >
-            ‹
-          </button>
-          <span
-            style={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 16,
-              flex: 1,
-              textAlign: "center",
-            }}
-          >
-            Wallet
-          </span>
+        <div style={{ display: "flex", alignItems: "center", padding: "14px 20px" }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#fff", fontSize: 22, cursor: "pointer" }}>‹</button>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, flex: 1, textAlign: "center" }}>Wallet</span>
           <div style={{ width: 30 }} />
         </div>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,.7)" }}>
-            Total Balance
-          </div>
-          <div
-            style={{
-              fontSize: 36,
-              fontWeight: 900,
-              color: "#fff",
-              marginTop: 4,
-            }}
-          >
-            ৳{balance.toFixed(2)}
-          </div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,.7)" }}>Total Balance</div>
+          <div style={{ fontSize: 36, fontWeight: 900, color: "#fff", marginTop: 4 }}>৳{balance.toFixed(2)}</div>
         </div>
       </div>
       <div style={{ padding: "16px 14px" }}>
-        <div
-          style={{
-            display: "flex",
-            background: "#fff",
-            borderRadius: 14,
-            padding: 4,
-            gap: 4,
-            marginBottom: 20,
-            boxShadow: "0 2px 8px #0001",
-          }}
-        >
+        <div style={{ display: "flex", background: "#fff", borderRadius: 14, padding: 4, gap: 4, marginBottom: 20, boxShadow: "0 2px 8px #0001" }}>
           {["deposit", "withdraw"].map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setTab(t);
-                setDone("");
-                setAmount("");
-              }}
-              style={{
-                flex: 1,
-                padding: "11px 0",
-                borderRadius: 11,
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: 14,
-                background: tab === t ? gradient : "transparent",
-                color: tab === t ? "#fff" : "#aaa",
-                fontFamily: "'Poppins',sans-serif",
-              }}
-            >
+            <button key={t} onClick={() => { setTab(t); setDone(""); setAmount(""); }} style={{ flex: 1, padding: "11px 0", borderRadius: 11, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: tab === t ? gradient : "transparent", color: tab === t ? "#fff" : "#aaa", fontFamily: "'Poppins',sans-serif" }}>
               {t === "deposit" ? "📥 Deposit" : "📤 Withdraw"}
             </button>
           ))}
         </div>
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 16,
-            padding: "20px",
-            boxShadow: "0 2px 8px #0001",
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              color: G.sub,
-              marginBottom: 10,
-              fontWeight: 600,
-            }}
-          >
-            Amount (৳)
-          </div>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Enter amount..."
-            style={{
-              width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
-              border: "1.5px solid #eee",
-              fontSize: 16,
-              fontFamily: "'Poppins',sans-serif",
-              marginBottom: 14,
-              color: G.text,
-              outline: "none",
-            }}
-          />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 8,
-              marginBottom: 16,
-            }}
-          >
+        <div style={{ background: "#fff", borderRadius: 16, padding: "20px", boxShadow: "0 2px 8px #0001", marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: G.sub, marginBottom: 10, fontWeight: 600 }}>Amount (৳)</div>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Enter amount..." style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 16, fontFamily: "'Poppins',sans-serif", marginBottom: 14, color: G.text, outline: "none" }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 16 }}>
             {presets.map((p) => (
-              <button
-                key={p}
-                onClick={() => setAmount(p.toString())}
-                style={{
-                  padding: "10px 0",
-                  borderRadius: 10,
-                  border: "1.5px solid #EF5350",
-                  background: amount == p ? "#EF5350" : "#fff",
-                  color: amount == p ? "#fff" : "#EF5350",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  fontFamily: "'Poppins',sans-serif",
-                }}
-              >
-                ৳{p}
-              </button>
+              <button key={p} onClick={() => setAmount(p.toString())} style={{ padding: "10px 0", borderRadius: 10, border: "1.5px solid #EF5350", background: amount == p ? "#EF5350" : "#fff", color: amount == p ? "#fff" : "#EF5350", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>৳{p}</button>
             ))}
           </div>
           {tab === "withdraw" && accounts && (
-            <div
-              style={{
-                background: "#f5f5f5",
-                borderRadius: 10,
-                padding: "12px",
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: G.sub,
-                  marginBottom: 6,
-                  fontWeight: 600,
-                }}
-              >
-                Withdrawal account
-              </div>
-              <div style={{ fontWeight: 700, color: G.text }}>
-                {accounts.main}
-              </div>
+            <div style={{ background: "#f5f5f5", borderRadius: 10, padding: "12px", marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>Withdrawal account</div>
+              <div style={{ fontWeight: 700, color: G.text }}>{accounts.main}</div>
             </div>
           )}
-          {done && (
-            <div
-              style={{
-                background: "#E8F5E9",
-                borderRadius: 10,
-                padding: "12px",
-                marginBottom: 14,
-                color: "#2E7D32",
-                fontWeight: 600,
-                fontSize: 13,
-              }}
-            >
-              {done}
-            </div>
-          )}
-          <button
-            onClick={tab === "deposit" ? doDeposit : doWithdraw}
-            style={{
-              width: "100%",
-              padding: "15px 0",
-              borderRadius: 12,
-              border: "none",
-              background: gradient,
-              color: "#fff",
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: "pointer",
-              fontFamily: "'Poppins',sans-serif",
-              boxShadow: "0 6px 20px #EF535044",
-            }}
-          >
+          {done && <div style={{ background: "#E8F5E9", borderRadius: 10, padding: "12px", marginBottom: 14, color: "#2E7D32", fontWeight: 600, fontSize: 13 }}>{done}</div>}
+          <button onClick={tab === "deposit" ? doDeposit : doWithdraw} style={{ width: "100%", padding: "15px 0", borderRadius: 12, border: "none", background: gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "'Poppins',sans-serif", boxShadow: "0 6px 20px #EF535044" }}>
             {tab === "deposit" ? "Deposit Now" : "Request Withdrawal"}
           </button>
         </div>
@@ -4105,15 +2635,9 @@ function WalletScreen({ balance, setBalance, accounts, onBack }) {
     </div>
   );
 }
- 
+
 /* ── SUPPORT CHAT ── */
-const QUICK = [
-  "How to deposit?",
-  "Withdrawal issue",
-  "Account help",
-  "Bonus info",
-  "Check balance",
-];
+const QUICK = ["How to deposit?","Withdrawal issue","Account help","Bonus info","Check balance"];
 const AUTO_REPLIES = [
   "Thanks for reaching out! Our team will assist you shortly. 😊",
   "I understand your concern. Let me check that for you.",
@@ -4122,380 +2646,82 @@ const AUTO_REPLIES = [
   "Is there anything else I can help you with today?",
 ];
 function SupportChat({ onClose, user }) {
-  const [messages, setMessages] = useState([
-    {
-      from: "support",
-      text: "👋 Welcome to HGNICE Support! How can I help you today?",
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    },
-  ]);
+  const [messages, setMessages] = useState([{ from: "support", text: "👋 Welcome to HGNICE Support! How can I help you today?", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typing]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
   const send = (text) => {
     const t = text || input.trim();
     if (!t) return;
-    const time = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     setMessages((m) => [...m, { from: "user", text: t, time }]);
     setInput("");
     setTyping(true);
     setTimeout(() => {
       setTyping(false);
-      setMessages((m) => [
-        ...m,
-        {
-          from: "support",
-          text: AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)],
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
+      setMessages((m) => [...m, { from: "support", text: AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)], time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
     }, 1400 + Math.random() * 800);
   };
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 500,
-        display: "flex",
-        flexDirection: "column",
-        maxWidth: 480,
-        margin: "0 auto",
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          background: "#075E54",
-          padding: "14px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          flexShrink: 0,
-        }}
-      >
-        <button
-          onClick={onClose}
-          style={{
-            background: "none",
-            border: "none",
-            color: "rgba(255,255,255,.8)",
-            fontSize: 22,
-            cursor: "pointer",
-          }}
-        >
-          ‹
-        </button>
-        <div
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            background: "#128C7E",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 20,
-          }}
-        >
-          🎧
-        </div>
+    <div style={{ position: "fixed", inset: 0, zIndex: 500, display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto", background: "#fff" }}>
+      <div style={{ background: "#075E54", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,.8)", fontSize: 22, cursor: "pointer" }}>‹</button>
+        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#128C7E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎧</div>
         <div style={{ flex: 1 }}>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
-            HGNICE Support
-          </div>
-          <div style={{ color: "#B2DFDB", fontSize: 11 }}>
-            {typing ? "typing..." : "🟢 Online"}
-          </div>
+          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>HGNICE Support</div>
+          <div style={{ color: "#B2DFDB", fontSize: 11 }}>{typing ? "typing..." : "🟢 Online"}</div>
         </div>
-        <span
-          style={{
-            color: "rgba(255,255,255,.7)",
-            fontSize: 20,
-            cursor: "pointer",
-          }}
-        >
-          📞
-        </span>
+        <span style={{ color: "rgba(255,255,255,.7)", fontSize: 20, cursor: "pointer" }}>📞</span>
       </div>
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          background: "#E5DDD5",
-          padding: "10px 10px 0",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-        }}
-      >
+      <div style={{ flex: 1, overflowY: "auto", background: "#E5DDD5", padding: "10px 10px 0", display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ textAlign: "center", marginBottom: 4 }}>
-          <span
-            style={{
-              background: "rgba(255,255,255,.85)",
-              borderRadius: 12,
-              padding: "4px 14px",
-              fontSize: 11,
-              color: "#666",
-            }}
-          >
-            TODAY
-          </span>
+          <span style={{ background: "rgba(255,255,255,.85)", borderRadius: 12, padding: "4px 14px", fontSize: 11, color: "#666" }}>TODAY</span>
         </div>
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              display: "flex",
-              justifyContent: msg.from === "user" ? "flex-end" : "flex-start",
-              animation: "msgIn .18s ease",
-            }}
-          >
-            {msg.from === "support" && (
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "#128C7E",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  flexShrink: 0,
-                  marginRight: 6,
-                  marginTop: "auto",
-                }}
-              >
-                🎧
-              </div>
-            )}
-            <div
-              style={{
-                maxWidth: "76%",
-                background: msg.from === "user" ? "#DCF8C6" : "#fff",
-                borderRadius:
-                  msg.from === "user"
-                    ? "16px 4px 16px 16px"
-                    : "4px 16px 16px 16px",
-                padding: "9px 12px 6px",
-                boxShadow: "0 1px 3px #0001",
-              }}
-            >
-              {msg.from === "support" && (
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#075E54",
-                    fontWeight: 700,
-                    marginBottom: 2,
-                  }}
-                >
-                  Support Agent
-                </div>
-              )}
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "#1A1A2E",
-                  lineHeight: 1.5,
-                  wordBreak: "break-word",
-                }}
-              >
-                {msg.text}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "#999",
-                  textAlign: "right",
-                  marginTop: 4,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  gap: 3,
-                }}
-              >
+          <div key={i} style={{ display: "flex", justifyContent: msg.from === "user" ? "flex-end" : "flex-start", animation: "msgIn .18s ease" }}>
+            {msg.from === "support" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#128C7E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginRight: 6, marginTop: "auto" }}>🎧</div>}
+            <div style={{ maxWidth: "76%", background: msg.from === "user" ? "#DCF8C6" : "#fff", borderRadius: msg.from === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px", padding: "9px 12px 6px", boxShadow: "0 1px 3px #0001" }}>
+              {msg.from === "support" && <div style={{ fontSize: 11, color: "#075E54", fontWeight: 700, marginBottom: 2 }}>Support Agent</div>}
+              <div style={{ fontSize: 14, color: "#1A1A2E", lineHeight: 1.5, wordBreak: "break-word" }}>{msg.text}</div>
+              <div style={{ fontSize: 10, color: "#999", textAlign: "right", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
                 {msg.time}
-                {msg.from === "user" && (
-                  <span style={{ color: "#34B7F1", fontSize: 12 }}>✓✓</span>
-                )}
+                {msg.from === "user" && <span style={{ color: "#34B7F1", fontSize: 12 }}>✓✓</span>}
               </div>
             </div>
           </div>
         ))}
         {typing && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-start",
-              gap: 6,
-              alignItems: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "#128C7E",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-              }}
-            >
-              🎧
-            </div>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: "4px 16px 16px 16px",
-                padding: "12px 16px",
-                boxShadow: "0 1px 3px #0001",
-                display: "flex",
-                gap: 4,
-                alignItems: "center",
-              }}
-            >
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: "#aaa",
-                    animation: `dotBounce 1.2s ease-in-out ${
-                      i * 0.15
-                    }s infinite`,
-                  }}
-                />
-              ))}
+          <div style={{ display: "flex", justifyContent: "flex-start", gap: 6, alignItems: "flex-end" }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#128C7E", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🎧</div>
+            <div style={{ background: "#fff", borderRadius: "4px 16px 16px 16px", padding: "12px 16px", boxShadow: "0 1px 3px #0001", display: "flex", gap: 4, alignItems: "center" }}>
+              {[0, 1, 2].map((i) => <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "#aaa", animation: `dotBounce 1.2s ease-in-out ${i * 0.15}s infinite` }} />)}
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
-      <div
-        style={{
-          background: "#F0F0F0",
-          padding: "8px 10px 4px",
-          display: "flex",
-          gap: 6,
-          overflowX: "auto",
-          borderTop: "1px solid #ddd",
-          flexShrink: 0,
-        }}
-      >
-        {QUICK.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => send(q)}
-            style={{
-              flexShrink: 0,
-              padding: "6px 12px",
-              borderRadius: 20,
-              border: "1px solid #128C7E",
-              background: "#fff",
-              color: "#075E54",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              fontFamily: "'Poppins',sans-serif",
-            }}
-          >
-            {q}
-          </button>
-        ))}
+      <div style={{ background: "#F0F0F0", padding: "8px 10px 4px", display: "flex", gap: 6, overflowX: "auto", borderTop: "1px solid #ddd", flexShrink: 0 }}>
+        {QUICK.map((q, i) => <button key={i} onClick={() => send(q)} style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 20, border: "1px solid #128C7E", background: "#fff", color: "#075E54", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "'Poppins',sans-serif" }}>{q}</button>)}
       </div>
-      <div
-        style={{
-          background: "#F0F0F0",
-          padding: "8px 10px 12px",
-          display: "flex",
-          gap: 8,
-          alignItems: "flex-end",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            background: "#fff",
-            borderRadius: 24,
-            padding: "10px 14px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: "0 1px 4px #0001",
-          }}
-        >
+      <div style={{ background: "#F0F0F0", padding: "8px 10px 12px", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0 }}>
+        <div style={{ flex: 1, background: "#fff", borderRadius: 24, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 4px #0001" }}>
           <span style={{ fontSize: 20, cursor: "pointer" }}>😊</span>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Type your message..."
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              fontSize: 14,
-              background: "transparent",
-              fontFamily: "'Poppins',sans-serif",
-              color: "#1A1A2E",
-            }}
-          />
+          <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Type your message..." style={{ flex: 1, border: "none", outline: "none", fontSize: 14, background: "transparent", fontFamily: "'Poppins',sans-serif", color: "#1A1A2E" }} />
         </div>
-        <button
-          onClick={() => (input.trim() ? send() : null)}
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: "50%",
-            border: "none",
-            background: "#128C7E",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 20,
-            boxShadow: "0 2px 10px #128C7E55",
-            flexShrink: 0,
-          }}
-        >
+        <button onClick={() => (input.trim() ? send() : null)} style={{ width: 46, height: 46, borderRadius: "50%", border: "none", background: "#128C7E", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 2px 10px #128C7E55", flexShrink: 0 }}>
           {input.trim() ? "➤" : "🎤"}
         </button>
       </div>
     </div>
   );
 }
- 
+
 /* ── TRADING SIMULATOR ── */
 const CANDLE_DURATION = 30;
 const ENTRY_WINDOW    = 10;
- 
+
 const TRADE_MARKETS = [
   { id:"USDJPY", label:"USD/JPY", base:154.5,  vol:0.00035, decimals:2, prefix:"" },
   { id:"EURUSD", label:"EUR/USD", base:1.0845,  vol:0.00018, decimals:4, prefix:"" },
@@ -4503,8 +2729,7 @@ const TRADE_MARKETS = [
   { id:"XAUUSD", label:"XAU/USD", base:2345.0,  vol:0.00025, decimals:1, prefix:"$" },
   { id:"BTCUSD", label:"BTC/USD", base:43250.0, vol:0.0013,  decimals:2, prefix:"$" },
 ];
- 
-// ── Sound Engine ─────────────────────────────────────────────
+
 const AudioEngine = (() => {
   let ctx = null;
   const getCtx = () => {
@@ -4535,141 +2760,238 @@ const AudioEngine = (() => {
     uiClick: function() { tone(800,"sine",0.05,0.07); },
   };
 })();
- 
-// ── Candle Engine ─────────────────────────────────────────────
-function useCandleEngine(market) {
-  const store = useRef({ candles:[], live:0, openRef:0 });
- 
-  const seed = useCallback(function(m) {
+
+const GlobalMarkets = (function() {
+  const stores = {};
+  const intervals = { price: null, timer: null };
+  const listeners = [];
+  let initialized = false;
+
+  function seedMarket(m) {
     let p = m.base * (0.99 + Math.random() * 0.02);
-    const arr = [];
+    const candles = [];
     for (let i = 0; i < 80; i++) {
       const move = (Math.random() - 0.5) * 2 * p * m.vol * 0.8;
-      const o = p, cl = p + move;
-      const hi = Math.max(o, cl) + Math.abs(move) * Math.random() * 0.4;
-      const lo = Math.min(o, cl) - Math.abs(move) * Math.random() * 0.4;
-      arr.push({ o, c:cl, hi, lo, closed:true });
-      p = cl;
+      const o = p, c = p + move;
+      const hi = Math.max(o, c) + Math.abs(move) * Math.random() * 0.4;
+      const lo = Math.min(o, c) - Math.abs(move) * Math.random() * 0.4;
+      candles.push({ o, c, hi, lo, closed: true });
+      p = c;
     }
-    arr.push({ o:p, c:p, hi:p, lo:p, closed:false });
-    store.current.candles = arr;
-    store.current.live    = p;
-    store.current.openRef = p;
-  }, []);
- 
-  const tick = useCallback(function(m) {
-    const s    = store.current;
-    const prev = s.live;
-    const rev  = (m.base - prev) / m.base * 0.0002;
-    const move = (Math.random() - 0.488 + rev) * prev * m.vol * 0.18;
-    const next = Math.max(prev + move, m.base * 0.5);
-    s.live = next;
-    const last = s.candles[s.candles.length - 1];
-    if (last) { last.c = next; last.hi = Math.max(last.hi, next); last.lo = Math.min(last.lo, next); }
-    return next;
-  }, []);
- 
-  const closeCandle = useCallback(function() {
-    const s   = store.current;
-    const arr = s.candles;
-    if (!arr.length) return;
-    arr[arr.length - 1].closed = true;
-    const cl = s.live;
-    arr.push({ o:cl, c:cl, hi:cl, lo:cl, closed:false });
-    if (arr.length > 120) arr.shift();
-    s.openRef = cl;
-  }, []);
- 
-  return { store, seed, tick, closeCandle };
-}
- 
-// ── Loading Screen ────────────────────────────────────────────
-function TradingLoader({ onDone }) {
-  const [progress, setProgress] = useState(0);
-  const [dots, setDots]         = useState("");
- 
-  useEffect(function() {
-    const start = Date.now();
-    const DURATION = 1800;
-    let raf;
-    const step = function() {
-      const p = Math.min((Date.now() - start) / DURATION, 1);
-      setProgress(p);
-      if (p < 1) { raf = requestAnimationFrame(step); }
-      else { setTimeout(onDone, 200); }
+    candles.push({ o: p, c: p, hi: p, lo: p, closed: false });
+    stores[m.id] = { candles, live: p, openRef: p, timeLeft: CANDLE_DURATION, resolved: false };
+  }
+
+  function notify() { listeners.forEach(function(fn) { fn(); }); }
+
+  function init() {
+    if (initialized) return;
+    initialized = true;
+    TRADE_MARKETS.forEach(function(m) { seedMarket(m); });
+
+    intervals.price = setInterval(function() {
+      TRADE_MARKETS.forEach(function(m) {
+        const s    = stores[m.id];
+        const prev = s.live;
+        const rev  = (m.base - prev) / m.base * 0.0002;
+        const move = (Math.random() - 0.488 + rev) * prev * m.vol * 0.18;
+        const next = Math.max(prev + move, m.base * 0.5);
+        s.live = next;
+        const last = s.candles[s.candles.length - 1];
+        if (last) { last.c = next; last.hi = Math.max(last.hi, next); last.lo = Math.min(last.lo, next); }
+      });
+      notify();
+    }, 280);
+
+    intervals.timer = setInterval(function() {
+      TRADE_MARKETS.forEach(function(m) {
+        const s = stores[m.id];
+        s.timeLeft--;
+        if (s.timeLeft <= 0) {
+          const last = s.candles[s.candles.length - 1];
+          if (last) last.closed = true;
+          const cl = s.live;
+          s.candles.push({ o: cl, c: cl, hi: cl, lo: cl, closed: false });
+          if (s.candles.length > 120) s.candles.shift();
+          s.openRef  = cl;
+          s.timeLeft = CANDLE_DURATION;
+          s.resolved = false;
+        }
+      });
+      notify();
+    }, 1000);
+  }
+
+  function getStore(id) { return stores[id]; }
+
+  function subscribe(fn) {
+    listeners.push(fn);
+    return function() {
+      const i = listeners.indexOf(fn);
+      if (i !== -1) listeners.splice(i, 1);
     };
-    raf = requestAnimationFrame(step);
-    return function() { cancelAnimationFrame(raf); };
-  }, []); // eslint-disable-line
- 
+  }
+
+  return { init, getStore, subscribe };
+})();
+
+function TradingLoader({ onDone }) {
+  const canvasRef = useRef(null);
+  const onDoneRef = useRef(onDone);
+  useEffect(function() { onDoneRef.current = onDone; }, [onDone]);
+
   useEffect(function() {
-    const iv = setInterval(function() {
-      setDots(function(d) { return d.length >= 3 ? "" : d + "."; });
-    }, 400);
-    return function() { clearInterval(iv); };
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const W = 400, H = 650;
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const startTime = Date.now();
+    let raf;
+
+    const pts = [];
+    let py = 180, px = 0;
+    while (px < W - 20) {
+      py += (Math.random() - 0.46) * 14;
+      py  = Math.max(80, Math.min(260, py));
+      pts.push({ x: px, y: py });
+      px += 5 + Math.random() * 5;
+    }
+
+    const draw = function() {
+      const elapsed  = (Date.now() - startTime) / 1000;
+      const progress = Math.min(elapsed / 2.0, 1);
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#050508";
+      ctx.fillRect(0, 0, W, H);
+
+      const grd = ctx.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, 220);
+      grd.addColorStop(0, "rgba(0,180,100," + (0.08 + 0.04 * Math.sin(elapsed * 1.4)) + ")");
+      grd.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+
+      const drawCount = Math.floor(progress * pts.length);
+      if (drawCount > 1) {
+        const slice = pts.slice(0, drawCount);
+        const ox = 10, oy = 120;
+
+        ctx.save();
+        ctx.shadowColor = "#00cc88";
+        ctx.shadowBlur  = 20;
+        ctx.beginPath();
+        slice.forEach(function(p, i) { i === 0 ? ctx.moveTo(ox+p.x, oy+p.y) : ctx.lineTo(ox+p.x, oy+p.y); });
+        ctx.strokeStyle = "#00cc88";
+        ctx.lineWidth   = 2.5;
+        ctx.lineJoin    = "round";
+        ctx.lineCap     = "round";
+        ctx.stroke();
+        ctx.restore();
+
+        const ep = slice[slice.length - 1];
+        ctx.save();
+        ctx.beginPath();
+        slice.forEach(function(p, i) { i === 0 ? ctx.moveTo(ox+p.x, oy+p.y) : ctx.lineTo(ox+p.x, oy+p.y); });
+        ctx.lineTo(ox + ep.x, oy + 280);
+        ctx.lineTo(ox, oy + 280);
+        ctx.closePath();
+        const fill = ctx.createLinearGradient(0, oy, 0, oy + 280);
+        fill.addColorStop(0, "rgba(0,200,136,0.22)");
+        fill.addColorStop(1, "rgba(0,200,136,0)");
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.shadowColor = "#00cc88";
+        ctx.shadowBlur  = 24;
+        ctx.beginPath();
+        ctx.arc(ox + ep.x, oy + ep.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "#00cc88";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      const candleData = [36,22,48,30,52,18,42,34,50,26];
+      candleData.forEach(function(h, i) {
+        const bull  = i % 2 === 0;
+        const alpha = Math.min(progress * 2 - i * 0.1, 1);
+        if (alpha <= 0) return;
+        const cx = 30 + i * 36;
+        const cy = H - 80;
+        ctx.globalAlpha = alpha * 0.45;
+        ctx.fillStyle   = bull ? "#00cc88" : "#ff3355";
+        ctx.fillRect(cx - 1, cy - h * 0.35, 2, h * 0.35);
+        ctx.fillRect(cx - 6, cy - h, 12, h);
+        ctx.fillRect(cx - 1, cy, 2, h * 0.2);
+        ctx.globalAlpha = 1;
+      });
+
+      const titleAlpha = Math.min(progress * 2.5, 1);
+      ctx.save();
+      ctx.globalAlpha = titleAlpha;
+      ctx.font        = "bold 30px monospace";
+      ctx.textAlign   = "center";
+      ctx.fillStyle   = "#00cc88";
+      ctx.shadowColor = "#00cc88";
+      ctx.shadowBlur  = 28;
+      ctx.fillText("FX TRADER", W / 2, H * 0.14);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = Math.min(Math.max(progress * 3 - 0.8, 0), 1);
+      ctx.font        = "11px monospace";
+      ctx.textAlign   = "center";
+      ctx.fillStyle   = "rgba(0,200,136,0.5)";
+      ctx.shadowBlur  = 0;
+      ctx.fillText("HGNICE TRADING PLATFORM", W / 2, H * 0.21);
+      ctx.restore();
+
+      const bW = 240, bX = (W - bW) / 2, bY = H * 0.87;
+      ctx.fillStyle = "rgba(255,255,255,0.07)";
+      ctx.fillRect(bX, bY, bW, 3);
+      ctx.save();
+      ctx.shadowColor = "#00cc88";
+      ctx.shadowBlur  = 10;
+      ctx.fillStyle   = "#00cc88";
+      ctx.fillRect(bX, bY, bW * progress, 3);
+      ctx.restore();
+
+      const dotCount = Math.floor(elapsed * 2) % 4;
+      ctx.globalAlpha = 0.5;
+      ctx.font        = "11px monospace";
+      ctx.textAlign   = "center";
+      ctx.fillStyle   = "#6a6a8a";
+      ctx.fillText("Loading market data" + "...".slice(0, dotCount), W / 2, H * 0.93);
+      ctx.globalAlpha = 1;
+
+      if (progress < 1) {
+        raf = requestAnimationFrame(draw);
+      } else {
+        setTimeout(function() { onDoneRef.current && onDoneRef.current(); }, 250);
+      }
+    };
+
+    raf = requestAnimationFrame(draw);
+    return function() { cancelAnimationFrame(raf); };
   }, []);
- 
-  const barW = Math.round(progress * 100);
- 
+
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:999, background:"#050508", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"monospace" }}>
-      <style>{`
-        @keyframes glowPulse { 0%,100%{text-shadow:0 0 12px #00cc88} 50%{text-shadow:0 0 32px #00cc88, 0 0 60px #00cc8844} }
-        @keyframes spinRing  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes fadeUp    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-      `}</style>
- 
-      {/* Outer glow ring */}
-      <div style={{ position:"relative", width:110, height:110, marginBottom:28 }}>
-        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid rgba(0,200,136,0.1)", boxShadow:"0 0 40px rgba(0,200,136,0.08)" }} />
-        <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"#00cc88", borderRightColor:"rgba(0,200,136,0.3)", animation:"spinRing 1.2s linear infinite" }} />
-        <div style={{ position:"absolute", inset:8, borderRadius:"50%", border:"1px solid rgba(0,200,136,0.15)", borderBottomColor:"#00cc88", animation:"spinRing 1.8s linear infinite reverse" }} />
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ fontSize:28, color:"#00cc88", fontWeight:900, animation:"glowPulse 2s ease-in-out infinite" }}>FX</div>
-        </div>
-      </div>
- 
-      <div style={{ fontSize:20, fontWeight:900, color:"#00cc88", letterSpacing:4, marginBottom:6, animation:"glowPulse 2s ease-in-out infinite" }}>
-        FX TRADER
-      </div>
-      <div style={{ fontSize:10, color:"rgba(0,200,136,0.45)", letterSpacing:2, marginBottom:40, animation:"fadeUp 0.6s ease 0.2s both" }}>
-        HGNICE TRADING PLATFORM
-      </div>
- 
-      {/* Progress bar */}
-      <div style={{ width:200, height:3, background:"rgba(255,255,255,0.06)", borderRadius:2, overflow:"hidden", marginBottom:14 }}>
-        <div style={{ height:"100%", width:barW+"%", background:"linear-gradient(90deg,#007744,#00cc88)", borderRadius:2, boxShadow:"0 0 8px #00cc8866", transition:"width 0.1s linear" }} />
-      </div>
- 
-      <div style={{ fontSize:11, color:"#4a4a6a", letterSpacing:1 }}>
-        Loading market data{dots}
-      </div>
- 
-      {/* Decorative candles */}
-      <div style={{ position:"absolute", bottom:60, display:"flex", gap:8, alignItems:"flex-end", opacity:0.15 }}>
-        {[40,28,52,35,48,22,44,38,56,30].map(function(h,i){
-          const bull = i%2===0;
-          return (
-            <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
-              <div style={{ width:1, height:h*0.3, background:bull?"#00cc88":"#ff3355" }} />
-              <div style={{ width:8, height:h, background:bull?"#00cc88":"#ff3355", borderRadius:1 }} />
-              <div style={{ width:1, height:h*0.2, background:bull?"#00cc88":"#ff3355" }} />
-            </div>
-          );
-        })}
-      </div>
+    <div style={{ position:"fixed", inset:0, zIndex:999, background:"#050508", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <canvas ref={canvasRef} style={{ width:"100%", maxWidth:400, height:"auto", display:"block" }} />
     </div>
   );
 }
- 
-// ── Chart Canvas ──────────────────────────────────────────────
+
 function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }) {
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
   const isDrag    = useRef(false);
   const dragX     = useRef(0);
   const dragOff   = useRef(0);
- 
+
   const draw = useCallback(function() {
     const canvas = canvasRef.current; if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -4682,12 +3004,11 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#07070e"; ctx.fillRect(0, 0, W, H);
- 
-    // Grid
+
     ctx.strokeStyle = "rgba(255,255,255,0.028)"; ctx.lineWidth = 1;
     for (let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,H/5*i);ctx.lineTo(W,H/5*i);ctx.stroke();}
     for (let i=1;i<7;i++){ctx.beginPath();ctx.moveTo(W/7*i,0);ctx.lineTo(W/7*i,H);ctx.stroke();}
- 
+
     const allCdls = store.current.candles;
     if (!allCdls || allCdls.length < 2) return;
     const VISIBLE=44, total=allCdls.length;
@@ -4696,7 +3017,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     const startI = Math.max(0, total-VISIBLE-off), endI = total-off;
     const disp   = allCdls.slice(startI, endI);
     if (disp.length < 2) return;
- 
+
     const prices = disp.flatMap(function(c){return[c.hi,c.lo];});
     let minP = Math.min.apply(null,prices), maxP = Math.max.apply(null,prices);
     const pad = (maxP-minP)*0.08; minP-=pad; maxP+=pad;
@@ -4704,13 +3025,11 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     const cW = (W-PADL-PADR)/disp.length;
     const toY = function(p){ return PADT+((maxP-p)/range)*(H-PADT-PADB); };
     const m = market;
- 
-    // Price axis
+
     ctx.font="bold 9px monospace"; ctx.fillStyle="rgba(255,255,255,0.22)"; ctx.textAlign="right";
     for (let i=0;i<=4;i++){const v=minP+(range*(4-i)/4);ctx.fillText(v.toFixed(m.decimals),W-2,toY(v)+3);}
     ctx.textAlign="left";
- 
-    // Candles
+
     disp.forEach(function(c,i){
       const x=PADL+i*cW, xc=x+cW*0.5, bull=c.c>=c.o;
       const isLive = !c.closed && off===0 && i===disp.length-1;
@@ -4723,8 +3042,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.fillRect(x+cW*0.15,bodyY,bW,bodyH);
       if(isLive)ctx.restore();
     });
- 
-    // Entry lines
+
     activeTrades.forEach(function(trade){
       if(trade.entry<minP||trade.entry>maxP)return;
       const ey=toY(trade.entry);
@@ -4735,8 +3053,7 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.font="bold 9px monospace"; ctx.fillStyle=trade.dir==="UP"?"#00cc88":"#ff3355";
       ctx.fillText((trade.dir==="UP"?"▲":"▼")+" "+m.prefix+trade.entry.toFixed(m.decimals),PADL+4,ey-3);
     });
- 
-    // Live price pill
+
     if(off===0){
       const lp=store.current.live, cy=toY(lp);
       const up=lp>=store.current.openRef, lc=up?"#00cc88":"#ff3355";
@@ -4751,19 +3068,18 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
       ctx.fillStyle="#000"; ctx.font="bold 9px monospace"; ctx.textAlign="left";
       ctx.fillText(priceStr,W-PADR+6,cy+3);
     }
- 
-    // Pan hint
+
     if(off>0){ctx.fillStyle="rgba(255,255,255,0.2)";ctx.font="10px sans-serif";ctx.textAlign="right";ctx.fillText("← "+off+" candles back",W-PADR-4,H-5);}
     if(off===0){ctx.fillStyle="rgba(255,255,255,0.1)";ctx.font="9px sans-serif";ctx.textAlign="center";ctx.fillText("← drag to pan history",W/2,H-4);}
   }, [store, activeTrades, market, chartOffset]);
- 
+
   useEffect(function(){
     let running=true;
     const loop=function(){ if(!running)return; draw(); rafRef.current=requestAnimationFrame(loop); };
     rafRef.current=requestAnimationFrame(loop);
     return function(){ running=false; cancelAnimationFrame(rafRef.current); };
   }, [draw]);
- 
+
   const onDown = function(e){ isDrag.current=true; dragX.current=e.clientX||(e.touches&&e.touches[0].clientX)||0; dragOff.current=chartOffset; };
   const onMove = function(e){
     if(!isDrag.current)return;
@@ -4772,15 +3088,16 @@ function TradeChart({ store, activeTrades, market, chartOffset, onOffsetChange }
     onOffsetChange(Math.min(Math.max(Math.round(dragOff.current+dx/9),0),max));
   };
   const onUp = function(){ isDrag.current=false; };
- 
-  return React.createElement("div", {
-    style:{ background:"#07070e", position:"relative", flexShrink:0, cursor:"grab", userSelect:"none" },
-    onMouseDown:onDown, onMouseMove:onMove, onMouseUp:onUp, onMouseLeave:onUp,
-    onTouchStart:function(e){onDown(e.touches[0]);}, onTouchMove:function(e){onMove(e.touches[0]);}, onTouchEnd:onUp,
-  }, React.createElement("canvas", { ref:canvasRef, style:{ width:"100%", height:210, display:"block" } }));
+
+  return (
+    <div style={{ background:"#07070e", position:"relative", flexShrink:0, cursor:"grab", userSelect:"none" }}
+      onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+      onTouchStart={function(e){onDown(e.touches[0]);}} onTouchMove={function(e){onMove(e.touches[0]);}} onTouchEnd={onUp}>
+      <canvas ref={canvasRef} style={{ width:"100%", height:210, display:"block" }} />
+    </div>
+  );
 }
- 
-// ── Entry Ring ────────────────────────────────────────────────
+
 function EntryRing({ timeLeft, total, entryWindow }) {
   total       = total       || CANDLE_DURATION;
   entryWindow = entryWindow || ENTRY_WINDOW;
@@ -4788,7 +3105,7 @@ function EntryRing({ timeLeft, total, entryWindow }) {
   const inWindow  = timeLeft > total - entryWindow;
   const windowPct = inWindow ? (timeLeft-(total-entryWindow))/entryWindow : 0;
   const totalPct  = timeLeft/total;
- 
+
   useEffect(function(){
     const canvas=canvasRef.current; if(!canvas)return;
     const ctx=canvas.getContext("2d");
@@ -4809,11 +3126,10 @@ function EntryRing({ timeLeft, total, entryWindow }) {
     ctx.fillStyle=inWindow?"#00cc88":timeLeft<=5?"#ff3355":"rgba(255,255,255,0.6)";
     ctx.fillText(timeLeft+"s",cx,cy+5);
   }, [timeLeft,inWindow,windowPct,totalPct]);
- 
-  return React.createElement("canvas", { ref:canvasRef, style:{ width:56, height:56, display:"block" } });
+
+  return <canvas ref={canvasRef} style={{ width:56, height:56, display:"block" }} />;
 }
- 
-// ── Position Card ─────────────────────────────────────────────
+
 function PositionCard({ trade, livePrice, market }) {
   const up   = livePrice > trade.entry;
   const won  = (trade.dir==="UP")===up;
@@ -4829,18 +3145,15 @@ function PositionCard({ trade, livePrice, market }) {
         <div style={{fontSize:10,color:"#5a5a7a",marginTop:1}}>Entry: {market.prefix}{trade.entry.toFixed(market.decimals)}</div>
       </div>
       <div style={{textAlign:"right",flexShrink:0}}>
-        <div style={{fontSize:14,fontWeight:900,fontFamily:"monospace",color:col,transition:"color 0.2s"}}>
-          {pnl>=0?"+":""}{pnl.toFixed(2)}$
-        </div>
+        <div style={{fontSize:14,fontWeight:900,fontFamily:"monospace",color:col,transition:"color 0.2s"}}>{pnl>=0?"+":""}{pnl.toFixed(2)}$</div>
         <div style={{fontSize:10,color:"#5a5a7a",marginTop:2}}>৳{trade.amt.toFixed(2)}</div>
       </div>
     </div>
   );
 }
- 
-// ── Main TradingGame ──────────────────────────────────────────
+
 function TradingGame({ balance, setBalance, onBack }) {
-  const [loading,      setLoading]      = useState(false);
+  const [loading,      setLoading]      = useState(true);
   const [marketIdx,    setMarketIdx]    = useState(0);
   const [livePrice,    setLivePrice]    = useState(0);
   const [openRef,      setOpenRef]      = useState(0);
@@ -4853,135 +3166,113 @@ function TradingGame({ balance, setBalance, onBack }) {
   const [chartOffset,  setChartOffset]  = useState(0);
   const [soundOn,      setSoundOn]      = useState(true);
   const [stats, setStats] = useState({ trades:0, wins:0, losses:0, profit:0, totalLoss:0, streak:0, bestStreak:0, pnlCurve:[] });
- 
+
   const market     = TRADE_MARKETS[marketIdx];
   const entryOpen  = timeLeft > CANDLE_DURATION - ENTRY_WINDOW;
   const pct        = openRef ? ((livePrice - openRef) / openRef * 100) : 0;
   const timerCol   = timeLeft > 10 ? "#00cc88" : timeLeft > 5 ? "#ffd700" : "#ff3355";
- 
-  // Refs for interval closures
+
   const activeTradesRef = useRef([]);
-  const livePriceRef    = useRef(0);
-  const openRefRef      = useRef(0);
-  const timeLeftRef     = useRef(CANDLE_DURATION);
   const tradeSeq        = useRef(0);
-  const timerRef        = useRef(null);
-  const priceRef        = useRef(null);
   const soundRef        = useRef(true);
-  const marketRef       = useRef(market);
+  const marketIdxRef    = useRef(0);
   const resolvedRef     = useRef(false);
   const pnlCanvasRef    = useRef(null);
- 
-  // Keep refs in sync with state
+
+  const storeRef = useRef(null);
+  storeRef.current = GlobalMarkets.getStore(market.id) || { candles:[], live:0, openRef:0 };
+
   useEffect(function(){ activeTradesRef.current = activeTrades; }, [activeTrades]);
   useEffect(function(){ soundRef.current = soundOn; }, [soundOn]);
-  useEffect(function(){ marketRef.current = market; }, [market]);
- 
-  const { store, seed, tick, closeCandle } = useCandleEngine(market);
- 
+  useEffect(function(){ marketIdxRef.current = marketIdx; }, [marketIdx]);
+
+  useEffect(function() {
+    GlobalMarkets.init();
+    const unsub = GlobalMarkets.subscribe(function() {
+      const idx = marketIdxRef.current;
+      const m   = TRADE_MARKETS[idx];
+      const s   = GlobalMarkets.getStore(m.id);
+      if (!s) return;
+      setLivePrice(s.live);
+      setOpenRef(s.openRef);
+      setTimeLeft(s.timeLeft);
+
+      if (s.timeLeft === CANDLE_DURATION && !resolvedRef.current && activeTradesRef.current.length > 0) {
+        resolvedRef.current = true;
+        resolveTrades(s, m);
+        setTimeout(function() { resolvedRef.current = false; }, 500);
+      }
+    });
+    const s0 = GlobalMarkets.getStore(TRADE_MARKETS[0].id);
+    if (s0) { setLivePrice(s0.live); setOpenRef(s0.openRef); setTimeLeft(s0.timeLeft); }
+    return unsub;
+  }, []); // eslint-disable-line
+
   const sound = useCallback(function(name) {
     if (!soundRef.current) return;
     if (AudioEngine[name]) AudioEngine[name]();
   }, []);
- 
-  const resolveCandle = useCallback(function() {
+
+  function resolveTrades(s, m) {
     const trades = activeTradesRef.current;
     if (!trades.length) return;
-    const closePrice = livePriceRef.current;
-    const openPrice  = openRefRef.current;
+    const closePrice = s.live;
+    const openPrice  = s.openRef;
     const outcomeUp  = closePrice >= openPrice;
-    const mLabel     = marketRef.current.label;
+    const mLabel     = m.label;
     const now        = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
     const resolved   = [];
- 
+
     trades.forEach(function(t) {
       const won = (t.dir==="UP") === outcomeUp;
       const pnl = won ? t.amt * 0.92 : -t.amt;
       setBalance(function(b){ return Math.max(0, b + pnl); });
       resolved.push({ id:t.id, dir:t.dir, entry:t.entry, amt:t.amt, won, pnl, close:closePrice, market:mLabel, time:now });
     });
- 
-    setStats(function(s) {
-      const newWins  = s.wins   + resolved.filter(function(r){return r.won;}).length;
-      const newLoss  = s.losses + resolved.filter(function(r){return !r.won;}).length;
-      const newProfit= s.profit + resolved.filter(function(r){return r.won;}).reduce(function(a,r){return a+r.pnl;},0);
-      const newTLoss = s.totalLoss + resolved.filter(function(r){return !r.won;}).reduce(function(a,r){return a+Math.abs(r.pnl);},0);
-      const streak   = resolved.every(function(r){return r.won;}) ? s.streak+1 : 0;
-      return { ...s, trades:s.trades+resolved.length, wins:newWins, losses:newLoss, profit:newProfit, totalLoss:newTLoss, streak, bestStreak:Math.max(s.bestStreak,streak), pnlCurve:[...s.pnlCurve, newProfit-newTLoss] };
+
+    setStats(function(prev) {
+      const newWins  = prev.wins   + resolved.filter(function(r){return r.won;}).length;
+      const newLoss  = prev.losses + resolved.filter(function(r){return !r.won;}).length;
+      const newProfit= prev.profit + resolved.filter(function(r){return r.won;}).reduce(function(a,r){return a+r.pnl;},0);
+      const newTLoss = prev.totalLoss + resolved.filter(function(r){return !r.won;}).reduce(function(a,r){return a+Math.abs(r.pnl);},0);
+      const streak   = resolved.every(function(r){return r.won;}) ? prev.streak+1 : 0;
+      return { ...prev, trades:prev.trades+resolved.length, wins:newWins, losses:newLoss, profit:newProfit, totalLoss:newTLoss, streak, bestStreak:Math.max(prev.bestStreak,streak), pnlCurve:[...prev.pnlCurve, newProfit-newTLoss] };
     });
- 
+
     setTradeHistory(function(h){ return resolved.concat(h).slice(0,100); });
     setActiveTrades([]);
     activeTradesRef.current = [];
- 
+
     const anyWon = resolved.some(function(r){return r.won;});
-    const totPnl = resolved.reduce(function(s,r){return s+r.pnl;},0);
+    const totPnl = resolved.reduce(function(acc,r){return acc+r.pnl;},0);
     setResultInfo({ won:anyWon, pnl:totPnl, close:closePrice, allWon:resolved.every(function(r){return r.won;}) });
     if (soundRef.current) { if (anyWon) AudioEngine.win(); else AudioEngine.loss(); }
     setTimeout(function(){ setResultInfo(null); }, 4200);
-  }, [setBalance]);
- 
-  const startMarket = useCallback(function(idx) {
-    clearInterval(timerRef.current);
-    clearInterval(priceRef.current);
-    const m = TRADE_MARKETS[idx];
-    marketRef.current = m;
-    seed(m);
-    const lp = store.current.live;
-    livePriceRef.current = lp; openRefRef.current = lp;
-    timeLeftRef.current = CANDLE_DURATION; resolvedRef.current = false;
-    setLivePrice(lp); setOpenRef(lp); setTimeLeft(CANDLE_DURATION);
-    setActiveTrades([]); activeTradesRef.current = [];
+  }
+
+  // ── ONLY ONE switchMarket — just changes view, markets keep running ──
+  const switchMarket = useCallback(function(idx) {
+    if (soundRef.current) AudioEngine.uiClick();
+    setMarketIdx(idx);
+    marketIdxRef.current = idx;
+    const s = GlobalMarkets.getStore(TRADE_MARKETS[idx].id);
+    if (s) { setLivePrice(s.live); setOpenRef(s.openRef); setTimeLeft(s.timeLeft); }
     setChartOffset(0);
- 
-    priceRef.current = setInterval(function() {
-      const next = tick(m);
-      livePriceRef.current = next;
-      setLivePrice(next);
-    }, 280);
- 
-    timerRef.current = setInterval(function() {
-      timeLeftRef.current--;
-      setTimeLeft(timeLeftRef.current);
-      if (timeLeftRef.current <= 0) {
-        if (!resolvedRef.current) {
-          resolvedRef.current = true;
-          resolveCandle();
-          closeCandle();
-          const newLp = store.current.live;
-          openRefRef.current = newLp;
-          setOpenRef(newLp);
-        }
-        timeLeftRef.current = CANDLE_DURATION;
-        resolvedRef.current = false;
-        setTimeLeft(CANDLE_DURATION);
-      }
-    }, 1000);
-  }, [seed, tick, closeCandle, store, resolveCandle]);
- 
-  useEffect(function() {
-    startMarket(0);
-    return function() { clearInterval(timerRef.current); clearInterval(priceRef.current); };
-  }, []); // eslint-disable-line
- 
+  }, []);
+
   const placeBet = useCallback(function(dir) {
     if (betAmt > balance || betAmt < 1 || !entryOpen) return;
     if (soundRef.current) AudioEngine.tradeEntry(dir);
     navigator && navigator.vibrate && navigator.vibrate(12);
+    const s     = GlobalMarkets.getStore(TRADE_MARKETS[marketIdxRef.current].id);
+    const entry = s ? s.live : livePrice;
     const id    = ++tradeSeq.current;
-    const trade = { id, dir, entry:livePriceRef.current, amt:betAmt };
+    const trade = { id, dir, entry, amt:betAmt };
     setActiveTrades(function(p){ return p.concat([trade]); });
     activeTradesRef.current = activeTradesRef.current.concat([trade]);
     setBalance(function(b){ return b - betAmt; });
-  }, [betAmt, balance, entryOpen, setBalance]);
- 
-  const switchMarket = useCallback(function(idx) {
-    if (soundRef.current) AudioEngine.uiClick();
-    setMarketIdx(idx);
-    startMarket(idx);
-  }, [startMarket]);
- 
-  // PNL chart
+  }, [betAmt, balance, entryOpen, livePrice, setBalance]);
+
   const drawPnl = useCallback(function() {
     const canvas = pnlCanvasRef.current; if(!canvas)return;
     const dpr=window.devicePixelRatio||1, W=canvas.offsetWidth||320, H=80;
@@ -5002,13 +3293,13 @@ function TradingGame({ balance, setBalance, onBack }) {
     curve.forEach(function(v,i){if(i>0)ctx.lineTo(toX(i),toY(v));});
     ctx.strokeStyle="#00cc88"; ctx.lineWidth=2; ctx.lineJoin="round"; ctx.stroke();
   }, [stats.pnlCurve]);
- 
+
   useEffect(function(){ if(activeTab==="profile")drawPnl(); }, [activeTab, stats, drawPnl]);
- 
-  if (loading) return null;
- 
+
+  if (loading) return <TradingLoader onDone={function(){ setLoading(false); }} />;
+
   const headerStyle = { background:"rgba(7,7,14,0.95)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 };
- 
+
   return (
     <div style={{ maxWidth:480, margin:"0 auto", background:"#050508", minHeight:"100vh", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column", color:"#e8e8ff", overflow:"hidden" }}>
       <style>{`
@@ -5018,8 +3309,7 @@ function TradingGame({ balance, setBalance, onBack }) {
         @keyframes blink2     { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes fadeIn     { from{opacity:0} to{opacity:1} }
       `}</style>
- 
-      {/* HEADER */}
+
       <div style={headerStyle}>
         <button onClick={onBack} style={{ background:"none", border:"none", color:"#5a5a7a", fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" }}>‹</button>
         <div style={{ fontFamily:"monospace", fontSize:15, fontWeight:900, color:"#00cc88", letterSpacing:2 }}>FX TRADER</div>
@@ -5032,8 +3322,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       </div>
- 
-      {/* TABS */}
+
       <div style={{ display:"flex", background:"rgba(7,7,14,0.9)", borderBottom:"1px solid rgba(255,255,255,0.05)", flexShrink:0 }}>
         {[["trade","Trade"],["history","History"],["profile","Profile"]].map(function(kl){
           return (
@@ -5043,12 +3332,9 @@ function TradingGame({ balance, setBalance, onBack }) {
           );
         })}
       </div>
- 
-      {/* ═══ TRADE TAB ═══ */}
+
       {activeTab === "trade" && (
         <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", animation:"tabSlide 0.2s ease" }}>
- 
-          {/* Market tabs */}
           <div style={{ display:"flex", gap:6, padding:"10px 12px", overflowX:"auto", background:"rgba(7,7,14,0.8)", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0 }}>
             {TRADE_MARKETS.map(function(tm, i) {
               const active = marketIdx === i;
@@ -5060,8 +3346,7 @@ function TradingGame({ balance, setBalance, onBack }) {
               );
             })}
           </div>
- 
-          {/* Price bar */}
+
           <div style={{ padding:"12px 16px", background:"rgba(10,10,20,0.9)", borderBottom:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
             <div>
               <div style={{ fontSize:10, color:"#4a4a6a", fontWeight:600, letterSpacing:.8, textTransform:"uppercase", marginBottom:4 }}>{market.label}</div>
@@ -5079,19 +3364,16 @@ function TradingGame({ balance, setBalance, onBack }) {
               </div>
             </div>
           </div>
- 
-          {/* Timer bars */}
+
           <div style={{ height:3, background:"rgba(255,255,255,0.04)", flexShrink:0 }}>
             <div style={{ height:"100%", width:((timeLeft/CANDLE_DURATION)*100)+"%", background:"linear-gradient(90deg,"+timerCol+"88,"+timerCol+")", transition:"width 1s linear, background 0.3s" }} />
           </div>
           <div style={{ height:2, background:"rgba(255,255,255,0.02)", flexShrink:0 }}>
             <div style={{ height:"100%", width:entryOpen?((timeLeft-(CANDLE_DURATION-ENTRY_WINDOW))/ENTRY_WINDOW*100)+"%":"0%", background:"linear-gradient(90deg,rgba(0,200,136,0.4),#00cc88)", transition:"width 1s linear" }} />
           </div>
- 
-          {/* Chart */}
-          <TradeChart store={store} activeTrades={activeTrades} market={market} chartOffset={chartOffset} onOffsetChange={setChartOffset} />
- 
-          {/* Bet panel */}
+
+          <TradeChart store={storeRef} activeTrades={activeTrades} market={market} chartOffset={chartOffset} onOffsetChange={setChartOffset} />
+
           <div style={{ padding:"14px 14px 12px", background:"rgba(10,10,20,0.85)", borderTop:"1px solid rgba(255,255,255,0.05)", flexShrink:0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
               <div style={{ fontSize:11, color:"#5a5a7a", fontWeight:600, letterSpacing:.6, textTransform:"uppercase", minWidth:52 }}>Amount</div>
@@ -5105,14 +3387,13 @@ function TradingGame({ balance, setBalance, onBack }) {
                 })}
               </div>
             </div>
- 
+
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, padding:"3px 3px 3px 14px" }}>
               <input type="number" value={betAmt} onChange={function(e){ setBetAmt(Math.max(1, parseFloat(e.target.value)||1)); }} style={{ flex:1, background:"transparent", border:"none", color:"#e8e8ff", fontSize:16, fontWeight:700, fontFamily:"sans-serif", outline:"none", minWidth:0 }} />
               <button onClick={function(){ setBetAmt(function(a){return Math.max(1,a-1);}); }} style={{ width:34,height:34,borderRadius:9,border:"none",background:"rgba(255,255,255,0.05)",color:"#e8e8ff",fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>−</button>
               <button onClick={function(){ setBetAmt(function(a){return a+1;}); }} style={{ width:34,height:34,borderRadius:9,border:"none",background:"rgba(255,255,255,0.05)",color:"#e8e8ff",fontSize:17,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>+</button>
             </div>
- 
-            {/* UP / DOWN */}
+
             <div style={{ display:"flex", gap:10 }}>
               {["UP","DOWN"].map(function(dir){
                 const isUp=dir==="UP", col=isUp?"#00cc88":"#ff3355", locked=!entryOpen, dis=balance<betAmt;
@@ -5124,15 +3405,14 @@ function TradingGame({ balance, setBalance, onBack }) {
                 );
               })}
             </div>
- 
+
             {!entryOpen && (
               <div style={{ marginTop:10, padding:"10px 14px", background:"rgba(255,51,85,0.06)", border:"1px solid rgba(255,51,85,0.18)", borderRadius:10, textAlign:"center", fontSize:12, fontWeight:700, color:"#ff3355", animation:"entryClosed 1.5s infinite" }}>
                 Entry closed — next candle in {timeLeft}s
               </div>
             )}
           </div>
- 
-          {/* Active positions */}
+
           <div style={{ background:"rgba(7,7,14,0.9)", borderTop:"1px solid rgba(255,255,255,0.04)", maxHeight:220, overflowY:"auto", flexShrink:0 }}>
             <div style={{ padding:"10px 14px 6px", display:"flex", alignItems:"center", gap:8, position:"sticky", top:0, background:"rgba(7,7,14,0.98)", zIndex:2 }}>
               <div style={{ width:6,height:6,borderRadius:"50%",background:"#00cc88",boxShadow:"0 0 8px #00cc88" }} />
@@ -5148,8 +3428,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
- 
-      {/* ═══ HISTORY TAB ═══ */}
+
       {activeTab === "history" && (
         <div style={{ flex:1, overflowY:"auto", animation:"tabSlide 0.2s ease" }}>
           <div style={{ padding:"14px 16px 10px", borderBottom:"1px solid rgba(255,255,255,0.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -5178,8 +3457,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
- 
-      {/* ═══ PROFILE TAB ═══ */}
+
       {activeTab === "profile" && (
         <div style={{ flex:1, overflowY:"auto", animation:"tabSlide 0.2s ease" }}>
           <div style={{ background:"radial-gradient(ellipse at 50% 0%,rgba(0,200,136,0.1),transparent 70%)", padding:"24px 16px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
@@ -5211,8 +3489,7 @@ function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
- 
-      {/* ═══ RESULT OVERLAY ═══ */}
+
       {resultInfo && (
         <div style={{ position:"fixed", inset:0, zIndex:700, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.78)", backdropFilter:"blur(16px)", animation:"fadeIn 0.3s ease" }}>
           <div style={{ background:"rgba(15,15,25,0.95)", border:"1px solid "+(resultInfo.won?"rgba(0,200,136,0.25)":"rgba(255,51,85,0.25)"), borderRadius:28, padding:"38px 44px", textAlign:"center", maxWidth:280, width:"90%", backdropFilter:"blur(20px)" }}>
@@ -5232,129 +3509,35 @@ function TradingGame({ balance, setBalance, onBack }) {
     </div>
   );
 }
- 
+
 /* ── FLOATING HELP ── */
 function FloatingHelp({ show, user }) {
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   if (!show) return null;
-  if (chatOpen)
-    return <SupportChat onClose={() => setChatOpen(false)} user={user} />;
+  if (chatOpen) return <SupportChat onClose={() => setChatOpen(false)} user={user} />;
   return (
     <>
       {open && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 92,
-            right: 16,
-            background: "#fff",
-            borderRadius: 18,
-            padding: "16px",
-            width: 235,
-            boxShadow: "0 10px 40px #0004",
-            zIndex: 1000,
-            fontFamily: "'Poppins',sans-serif",
-            animation: "fadeIn .2s ease",
-            border: "1px solid #f0f0f0",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 13,
-              marginBottom: 12,
-              color: G.text,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            🎧 <span>Support Center</span>
-          </div>
-          {[
-            "Deposit Not Received",
-            "Withdrawal Problem",
-            "Change Password",
-            "Modify E-Wallet",
-            "Add USDT Address",
-            "Check Official Website",
-          ].map((item, i) => (
-            <div
-              key={i}
-              onClick={() => {
-                setOpen(false);
-                setChatOpen(true);
-              }}
-              style={{
-                padding: "8px 0",
-                borderBottom: i < 5 ? "1px solid #f5f5f5" : "none",
-                fontSize: 13,
-                color: "#444",
-                cursor: "pointer",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              {item}
-              <span style={{ color: "#ddd", fontSize: 16 }}>›</span>
+        <div style={{ position: "fixed", bottom: 92, right: 16, background: "#fff", borderRadius: 18, padding: "16px", width: 235, boxShadow: "0 10px 40px #0004", zIndex: 1000, fontFamily: "'Poppins',sans-serif", animation: "fadeIn .2s ease", border: "1px solid #f0f0f0" }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12, color: G.text, display: "flex", alignItems: "center", gap: 6 }}>🎧 <span>Support Center</span></div>
+          {["Deposit Not Received","Withdrawal Problem","Change Password","Modify E-Wallet","Add USDT Address","Check Official Website"].map((item, i) => (
+            <div key={i} onClick={() => { setOpen(false); setChatOpen(true); }} style={{ padding: "8px 0", borderBottom: i < 5 ? "1px solid #f5f5f5" : "none", fontSize: 13, color: "#444", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {item}<span style={{ color: "#ddd", fontSize: 16 }}>›</span>
             </div>
           ))}
-          <button
-            onClick={() => {
-              setOpen(false);
-              setChatOpen(true);
-            }}
-            style={{
-              width: "100%",
-              marginTop: 12,
-              padding: "11px 0",
-              borderRadius: 12,
-              border: "none",
-              background: "#128C7E",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              fontFamily: "'Poppins',sans-serif",
-            }}
-          >
+          <button onClick={() => { setOpen(false); setChatOpen(true); }} style={{ width: "100%", marginTop: 12, padding: "11px 0", borderRadius: 12, border: "none", background: "#128C7E", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "'Poppins',sans-serif" }}>
             💬 Live Chat
           </button>
         </div>
       )}
-      <div
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          position: "fixed",
-          bottom: 92,
-          right: 16,
-          width: 54,
-          height: 54,
-          borderRadius: "50%",
-          background: open ? "#128C7E" : gradient,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          boxShadow: `0 6px 22px ${open ? "#128C7E55" : "#EF535066"}`,
-          zIndex: 1001,
-          animation: "pulse 2.5s infinite",
-          fontSize: 24,
-          transition: "background .3s",
-        }}
-      >
+      <div onClick={() => setOpen((o) => !o)} style={{ position: "fixed", bottom: 92, right: 16, width: 54, height: 54, borderRadius: "50%", background: open ? "#128C7E" : gradient, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: `0 6px 22px ${open ? "#128C7E55" : "#EF535066"}`, zIndex: 1001, animation: "pulse 2.5s infinite", fontSize: 24, transition: "background .3s" }}>
         {open ? "✕" : "💬"}
       </div>
     </>
   );
 }
- 
+
 /* ── ROOT ── */
 export default function App() {
   const [screen, setScreen] = useState("login");
@@ -5365,80 +3548,16 @@ export default function App() {
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
       <style>{CSS}</style>
-      {screen === "login" && (
-        <LoginScreen
-          onLogin={(u) => {
-            setUser(u);
-            setScreen("register");
-          }}
-          onGotoRegister={() => setScreen("register")}
-        />
-      )}
-      {screen === "register" && (
-        <RegisterScreen
-          onRegister={(u) => {
-            setUser(u);
-            setScreen("deposit");
-          }}
-          onBack={() => setScreen("login")}
-        />
-      )}
-      {screen === "deposit" && (
-        <DepositSetup
-          contact={user?.contact}
-          onDone={(acc) => {
-            setAccounts(acc);
-            setScreen("home");
-          }}
-        />
-      )}
-      {screen === "home" && (
-        <HomeScreen
-          user={user}
-          balance={balance}
-          onSelectGame={(g) => setScreen(g)}
-          onGoProfile={() => setScreen("profile")}
-          onGoWallet={() => setScreen("wallet")}
-        />
-      )}
-      {screen === "wingo" && (
-        <WinGoGame
-          balance={balance}
-          setBalance={setBalance}
-          onBack={() => setScreen("home")}
-        />
-      )}
-      {screen === "aviator" && (        <AviatorGame
-          balance={balance}
-          setBalance={setBalance}
-          onBack={() => setScreen("home")}
-        />
-      )}
-      {screen === "trading" && (
-        <TradingGame
-          balance={balance}
-          setBalance={setBalance}
-          onBack={() => setScreen("home")}
-        />
-      )}
-      {screen === "profile" && (
-        <ProfileScreen
-          user={user}
-          balance={balance}
-          accounts={accounts}
-          onBack={() => setScreen("home")}
-        />
-      )}
-      {screen === "wallet" && (
-        <WalletScreen
-          balance={balance}
-          setBalance={setBalance}
-          accounts={accounts}
-          onBack={() => setScreen("home")}
-        />
-      )}
+      {screen === "login" && <LoginScreen onLogin={(u) => { setUser(u); setScreen("register"); }} onGotoRegister={() => setScreen("register")} />}
+      {screen === "register" && <RegisterScreen onRegister={(u) => { setUser(u); setScreen("deposit"); }} onBack={() => setScreen("login")} />}
+      {screen === "deposit" && <DepositSetup contact={user?.contact} onDone={(acc) => { setAccounts(acc); setScreen("home"); }} />}
+      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => setScreen("profile")} onGoWallet={() => setScreen("wallet")} />}
+      {screen === "wingo" && <WinGoGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
+      {screen === "aviator" && <AviatorGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
+      {screen === "trading" && <TradingGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
+      {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} />}
+      {screen === "wallet" && <WalletScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setScreen("home")} />}
       <FloatingHelp show={!isPlaying} user={user} />
     </div>
   );
 }
- 
