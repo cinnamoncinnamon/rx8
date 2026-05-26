@@ -1,5 +1,3 @@
-// ─── SHARED CONSTANTS ───────────────────────────────────────────────────────
-
 export const NUM_COLORS = {
   0: ["red", "violet"],
   1: ["green"],
@@ -12,11 +10,9 @@ export const NUM_COLORS = {
   8: ["red"],
   9: ["green"],
 };
-
 export const isBig = (n) => n >= 5;
 export const BASE = "20260513100051260";
 export const makePID = (base, off = 0) => (BigInt(base) - BigInt(off)).toString();
-
 export const G = {
   red: "#EF5350",
   green: "#22C55E",
@@ -27,9 +23,7 @@ export const G = {
   text: "#1A1A2E",
   sub: "#888",
 };
-
 export const gradient = `linear-gradient(135deg,#EF5350,#FF8A80)`;
-
 export const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -47,3 +41,14 @@ input:focus{outline:none;}
 button:active{opacity:.85;}
 ::-webkit-scrollbar{width:0;height:0;}
 `;
+export function genHist(n = 50) {
+  return Array.from({ length: n }, (_, i) => {
+    const num = Math.floor(Math.random() * 10);
+    return {
+      period: makePID(BASE, i + 1),
+      number: num,
+      bigSmall: isBig(num) ? "Big" : "Small",
+      colors: NUM_COLORS[num],
+    };
+  });
+}
