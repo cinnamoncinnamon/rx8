@@ -6,7 +6,7 @@ const GAMES = [
   { id:"wingo", name:"Win Go", desc:"Guess Number · Green/Red/Violet", emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)" },
   { id:"aviator", name:"Aviator", desc:"Cash out before it flies away!", emoji:"✈️", bg:"linear-gradient(135deg,#0F0F2A,#3949AB)" },
   { id:"k3", name:"K3", desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎲", bg:"linear-gradient(135deg,#F97316,#FBBF24)", soon:true },
-  { id:"5d", name:"5D", desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎯", bg:"linear-gradient(135deg,#22C55E,#16A34A)", soon:true },
+ { id:"motoride", name:"Motoride", desc:"Pick your bike and race to win!", emoji:"🏍️", bg:"linear-gradient(135deg,#F97316,#EA580C)" },
   { id:"trx", name:"Trx Win", desc:"Guess Number · Green/Red/Violet", emoji:"💎", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", soon:true },
   { id:"trading", name:"FX Trader", desc:"Trade USD/JPY · EUR/USD · GBP/USD · XAU/USD", emoji:"📈", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)" },
 ];
