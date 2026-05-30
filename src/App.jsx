@@ -1,20 +1,16 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import HomeScreen from "./pages/HomeScreen";
-import { NUM_COLORS, isBig, BASE, makePID, genHist, G, CSS, gradient } from "./constants";
-import WinGoGame from "./games/lottery/WinGoGame";
-import ProfileScreen from "./profile/ProfileScreen";
-import SettingsScreen from "./pages/SettingsScreen";
-import WalletScreen from "./wallet/WalletScreen";
-import Ball from "./components/Ball";
+import React, { useState } from "react";
+import { CSS } from "./constants";
 import LoginScreen from "./pages/LoginScreen";
 import RegisterScreen from "./pages/RegisterScreen";
 import DepositSetup from "./pages/DepositSetup";
-import BottomNav from "./components/BottomNav";
-import SupportChat from "./components/SupportChat";
-import FloatingHelp from "./components/FloatingHelp";
+import HomeScreen from "./pages/HomeScreen";
+import WinGoGame from "./games/lottery/WinGoGame";
 import AviatorGame from "./games/aviator/AviatorGame";
 import TradingGame from "./games/aviator/TradingGame";
-
+import ProfileScreen from "./profile/ProfileScreen";
+import SettingsScreen from "./pages/SettingsScreen";
+import WalletScreen from "./wallet/WalletScreen";
+import FloatingHelp from "./components/FloatingHelp";
 
 export default function App() {
   const [screen, setScreen] = useState("login");
