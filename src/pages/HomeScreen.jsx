@@ -19,19 +19,20 @@ const CATEGORIES = [
 ];
 
 const POPULAR_GAMES = [
-  { id:"wingo", name:"Win Go", desc:"Guess Number · Green/Red/Violet", emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
-  { id:"aviator", name:"Aviator", desc:"Cash out before it flies away!", emoji:"✈️", bg:"linear-gradient(135deg,#0F0F2A,#3949AB)", tag:"POPULAR" },
-  { id:"motoride", name:"Moto Crash", desc:"Race & cash out before crash!", emoji:"🏍️", bg:"linear-gradient(135deg,#F97316,#EA580C)", tag:"NEW" },
-  { id:"trading", name:"FX Trader", desc:"Trade USD/JPY · EUR/USD · XAU/USD", emoji:"📈", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)" },
+  { id:"wingo",    name:"Win Go",     desc:"Guess Number · Green/Red/Violet",   emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
+  { id:"aviator",  name:"Aviator",    desc:"Cash out before it flies away!",     emoji:"✈️", bg:"linear-gradient(135deg,#0F0F2A,#3949AB)", tag:"POPULAR" },
+  { id:"motoride", name:"Moto Crash", desc:"Race & cash out before crash!",      emoji:"🏍️", bg:"linear-gradient(135deg,#F97316,#EA580C)", tag:"NEW" },
+  { id:"roadrush", name:"Road Rush",  desc:"Drive & cash out before you crash!", emoji:"🚗", bg:"linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)", tag:"NEW" },
+  { id:"trading",  name:"FX Trader",  desc:"Trade USD/JPY · EUR/USD · XAU/USD", emoji:"📈", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)" },
 ];
 
 const LOTTERY_GAMES = [
-  { id:"wingo", name:"Win Go", desc:"Guess Number · Green/Red/Violet", emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
-  { id:"k3", name:"K3", desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎲", bg:"linear-gradient(135deg,#F97316,#FBBF24)", soon:true },
-  { id:"5d", name:"5D", desc:"5 digit prediction game", emoji:"🎯", bg:"linear-gradient(135deg,#22C55E,#16A34A)", soon:true },
-  { id:"trx", name:"Trx Win", desc:"Guess Number · Green/Red/Violet", emoji:"💎", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", soon:true },
+  { id:"wingo",    name:"Win Go",    desc:"Guess Number · Green/Red/Violet",   emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
+  { id:"roadrush", name:"Road Rush", desc:"Drive & cash out before you crash!", emoji:"🚗", bg:"linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)", tag:"NEW" },
+  { id:"k3",       name:"K3",        desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎲", bg:"linear-gradient(135deg,#F97316,#FBBF24)", soon:true },
+  { id:"5d",       name:"5D",        desc:"5 digit prediction game",           emoji:"🎯", bg:"linear-gradient(135deg,#22C55E,#16A34A)", soon:true },
+  { id:"trx",      name:"Trx Win",   desc:"Guess Number · Green/Red/Violet",   emoji:"💎", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", soon:true },
 ];
-
 const SLOT_GAMES = [
   { id:"slots1", name:"Lucky 777", desc:"Classic fruit slots · 3 reels", emoji:"🎰", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", tag:"HOT" },
   { id:"slots2", name:"Gold Rush", desc:"Mine for gold · Big multipliers", emoji:"⛏️", bg:"linear-gradient(135deg,#F59E0B,#D97706)", tag:"NEW" },
