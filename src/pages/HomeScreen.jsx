@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
 import BottomNav from "../components/BottomNav";
-// At the top of HomeScreen.jsx, add these imports:
 import popularImg from "../assets/popular.png";
 import lotteryImg from "../assets/lottery.png";
 import slotsImg from "../assets/slots.png";
@@ -37,6 +36,7 @@ const SLOT_GAMES = [
   { id:"slots1", name:"Lucky 777", desc:"Classic fruit slots · 3 reels", emoji:"🎰", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", tag:"HOT" },
   { id:"slots2", name:"Gold Rush", desc:"Mine for gold · Big multipliers", emoji:"⛏️", bg:"linear-gradient(135deg,#F59E0B,#D97706)", tag:"NEW" },
   { id:"slots3", name:"Dragon Spin", desc:"Dragon wilds · Free spins", emoji:"🐉", bg:"linear-gradient(135deg,#DC2626,#991B1B)" },
+  { id:"slots6", name:"Tomb Raiders", desc:"Ancient relics · Wild Idol · Free spins", emoji:"🏺", bg:"linear-gradient(135deg,#92400E,#B45309)", tag:"NEW" },
   { id:"slots4", name:"Ocean Deep", desc:"Underwater treasure hunt", emoji:"🌊", bg:"linear-gradient(135deg,#0891B2,#0E7490)" },
   { id:"slots5", name:"Star Burst", desc:"Galactic wins · Expanding wilds", emoji:"⭐", bg:"linear-gradient(135deg,#4F46E5,#7C3AED)" },
 ];
