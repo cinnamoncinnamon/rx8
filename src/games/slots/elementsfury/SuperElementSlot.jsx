@@ -266,11 +266,8 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
   }, [win]);
 
   function adjustBet(delta) {
-    const opts = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
-    const idx  = opts.indexOf(bet);
-    const next = opts[Math.max(0, Math.min(opts.length - 1, (idx === -1 ? 1 : idx) + delta))];
-    setBet(next);
-  }
+  setBet(b => Math.max(1, Math.min(1000, b + delta)));
+}
 
   function toggleAuto() {
     setAutoSpins((n) => (n > 0 ? 0 : 10));
