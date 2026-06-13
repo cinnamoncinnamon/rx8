@@ -14,6 +14,8 @@ import FloatingHelp from "./components/FloatingHelp";
 import MotorideGame from "./games/motoride/MotorideGame";
 import RoadRushGame from "./games/roadrush/RoadRushGame";
 import TombRaidersSlot from "./games/slots/tombraiders/TombRaidersSlot"; 
+import SuperElementSlot from "./games/slots/elementsfury/SuperElementSlot";
+
 
 export default function App() {
   const [screen, setScreen] = useState("login");
@@ -35,6 +37,8 @@ export default function App() {
         {screen === "motoride" && <MotorideGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
           {screen === "roadrush" && <RoadRushGame onExit={() => setScreen("home")} />}
           {screen === "slots6" && <TombRaidersSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}  
+      {screen === "slots7" && <SuperElementSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
+      
       {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} onGoSettings={() => setScreen("settings")} activeNav={profileNav} setActiveNav={setProfileNav} onGoWallet={() => setScreen("wallet")} onGoHome={() => setScreen("home")} myHistory={[]} onLogout={() => setScreen("login")} />}
       {screen === "settings" && <SettingsScreen user={user} onBack={() => setScreen("profile")} />}
       {screen === "wallet" && <WalletScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setScreen("home")} />}
