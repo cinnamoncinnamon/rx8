@@ -39,7 +39,7 @@ const SLOT_GAMES = [
   { id:"slots6", name:"Tomb Raiders", desc:"Ancient relics · Wild Idol · Free spins", emoji:"🏺", bg:"linear-gradient(135deg,#92400E,#B45309)", tag:"NEW" },
   { id:"slots4", name:"Ocean Deep", desc:"Underwater treasure hunt", emoji:"🌊", bg:"linear-gradient(135deg,#0891B2,#0E7490)" },
   { id:"slots5", name:"Star Burst", desc:"Galactic wins · Expanding wilds", emoji:"⭐", bg:"linear-gradient(135deg,#4F46E5,#7C3AED)" },
-  
+  { id:"slots8", name:"Golden Relics", desc:"Underwater treasure · Mega jackpot", emoji:"🔱", bg:"linear-gradient(135deg,#062347,#04162f)", tag:"NEW" },
   { id:"slots7", name:"Elemental Fury", desc:"5x5 ways · Elements clash", emoji:"⚡", bg:"linear-gradient(135deg,#1a3a8a,#2a1a6a)", tag:"NEW" },
   
 ];

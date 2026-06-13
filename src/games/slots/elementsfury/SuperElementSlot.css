@@ -1,3 +1,12 @@
+.se-root { display:flex; flex-direction:column; align-items:center; padding:12px; width:100%; max-width:480px; margin:0 auto; box-sizing:border-box; }
+.se-root * { box-sizing:border-box; }
+.se-grid { display:grid; gap:6px; width:100%; }
+.se-col { display:flex; flex-direction:column; gap:6px; }
+.se-meter-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-top:8px; }
+.se-deck-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding:12px; }
+.se-center { display:flex; align-items:center; justify-content:center; }
+.se-col-btns { display:flex; flex-direction:column; gap:8px; }
+
 /* SuperElementSlot.css — slot-specific styles */
 
 .se-bg {
