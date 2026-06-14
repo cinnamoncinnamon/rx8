@@ -2,6 +2,10 @@ import arielImg    from "../../../assets/goldenrelics/ariel.png";
 import tridentImg  from "../../../assets/goldenrelics/sym-trident.png";
 import chestImg    from "../../../assets/goldenrelics/sym-chest.png";
 import crownImg    from "../../../assets/goldenrelics/sym-crown.png";
+import coinImg from "../../../assets/goldenrelics/sym-coin.png";
+import sapphireImg from "../../../assets/goldenrelics/sym-sapphire.png";
+import turtleImg from "../../../assets/goldenrelics/sym-turtle.png";
+import anchorImg from "../../../assets/goldenrelics/sym-anchor.png";
 import pearlImg    from "../../../assets/goldenrelics/sym-pearl.png";
 import octopusImg  from "../../../assets/goldenrelics/sym-octopus.png";
 export const SYMBOLS = [
@@ -58,12 +62,11 @@ const SYMBOL_IMGS = {
   chest:    chestImg,
   pearl:    pearlImg,
   octopus:  octopusImg,
-  coin:     null,
-  sapphire: null,
-  turtle:   null,
-  anchor:   null,
+  coin:     coinImg,
+  sapphire: sapphireImg,
+  turtle:   turtleImg,
+  anchor:   anchorImg,
 };
-ss
 const SYMBOL_GLOW = {
   poseidon: "rgba(94,231,255,0.5)",
   trident:  "rgba(255,217,122,0.55)",

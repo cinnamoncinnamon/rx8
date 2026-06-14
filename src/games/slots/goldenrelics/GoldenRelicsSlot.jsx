@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SYMBOLS, SYMBOL_PAY, SYMBOL_WEIGHT, SymbolGlyph } from "./symbols";
 import { mulberry32 } from "./rng";
 import "./GoldenRelicsSlot.css";
+import { UnderwaterScene } from "./UnderwaterScene";
 
 const REELS = 5;
 const ROWS  = 3;
@@ -287,7 +288,8 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
   const scatterSet = useMemo(() => new Set(scatterHits), [scatterHits]);
 
   return (
-    <div className="gr-wrapper">
+    <div className="gr-wrapper" style={{position:"relative"}}>
+      <UnderwaterScene />
       {/* Jackpot + Total Won */}
       <div className="gr-top-grid">
         <div className="gr-panel gr-panel--strong gr-panel--shimmer">
@@ -404,7 +406,7 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
         </Panel>
       </div>
 
-      {/* Quick bets */}
+     {/* Quick bets */}
       <div className="gr-quick-bets">
         {[5, 10, 25, 50, 100, 200].map((v) => (
           <button
@@ -416,35 +418,12 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
         ))}
       </div>
 
-      {/* Paytable */}
-      <div className="gr-paytable">
-        <div className="gr-paytable-header">
-          <span className="gr-label">Paytable · 3 in a row pays</span>
-          <span className="gr-label gr-label--gold">
-            3+ Scatter → {BONUS_SPINS_AWARD} Free Spins ×{BONUS_WIN_MULTIPLIER}
-          </span>
-        </div>
-        <div className="gr-paytable-list">
-          {SYMBOLS.slice().sort((a, b) => SYMBOL_PAY[b] - SYMBOL_PAY[a]).map((k) => (
-            <div key={k} className={`gr-pay-item${k === SCATTER ? " gr-pay-item--scatter" : ""}`}>
-              <div className="gr-pay-icon"><SymbolGlyph k={k} /></div>
-              <span className="gr-pay-label">×{SYMBOL_PAY[k]}{k === SCATTER ? " ★" : ""}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* History */}
-      <div className="gr-history">
-        {history.map((h, i) => (
-          <span key={i} className={`gr-hist-badge gr-hist-badge--${h.toLowerCase()}`}>
-            {h === "W" ? "WIN" : h === "B" ? "BIG WIN" : h === "F" ? "FREE SPINS" : h === "J" ? "JACKPOT" : "LOSS"}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+     
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
