@@ -17,6 +17,7 @@ import TombRaidersSlot from "./games/slots/tombraiders/TombRaidersSlot";
 import SuperElementSlot from "./games/slots/elementsfury/SuperElementSlot";
 import GoldenRelicsSlot from "./games/slots/goldenrelics/GoldenRelicsSlot";
 import ActivityScreen from "./pages/ActivityScreen";
+import PromotionScreen from "./pages/PromotionScreen";
 
 export default function App() {
   const [screen, setScreen] = useState("login");
@@ -32,8 +33,9 @@ export default function App() {
       {screen === "login" && <LoginScreen onLogin={(u) => { setUser(u); setScreen("register"); }} onGotoRegister={() => setScreen("register")} />}
       {screen === "register" && <RegisterScreen onRegister={(u) => { setUser(u); setScreen("deposit"); }} onBack={() => setScreen("login")} />}
       {screen === "deposit" && <DepositSetup contact={user?.contact} onDone={(acc) => { setAccounts(acc); setScreen("home"); }} />}
-      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} onGoWallet={() => setScreen("wallet")} onGoActivity={() => setScreen("activity")} />}
-      {screen === "activity" && <ActivityScreen user={user} balance={balance} setBalance={setBalance} onGoHome={() => setScreen("home")} onGoWallet={() => setScreen("wallet")} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} />}
+      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} onGoWallet={() => setScreen("wallet")} onGoActivity={() => setScreen("activity")} onGoPromo={() => setScreen("promotion")} />}
+      {screen === "activity" && <ActivityScreen user={user} balance={balance} setBalance={setBalance} onGoHome={() => setScreen("home")} onGoWallet={() => setScreen("wallet")} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} onGoPromo={() => setScreen("promotion")} />}
+      {screen === "promotion" && <PromotionScreen user={user} balance={balance} setBalance={setBalance} onGoHome={() => setScreen("home")} onGoWallet={() => setScreen("wallet")} onGoProfile={() => { setProfileNav("account"); setScreen("profile"); }} onGoActivity={() => setScreen("activity")} />}
       {screen === "wingo" && <WinGoGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "aviator" && <AviatorGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "trading" && <TradingGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
@@ -42,7 +44,7 @@ export default function App() {
       {screen === "slots6" && <TombRaidersSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots7" && <SuperElementSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots8" && <GoldenRelicsSlot balance={balance} setBalance={setBalance} bet={10} setBet={() => {}} onBack={() => setScreen("home")} />}
-      {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} onGoSettings={() => setScreen("settings")} activeNav={profileNav} setActiveNav={setProfileNav} onGoWallet={() => setScreen("wallet")} onGoHome={() => setScreen("home")} myHistory={[]} onLogout={() => setScreen("login")} />}
+      {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} onGoSettings={() => setScreen("settings")} activeNav={profileNav} setActiveNav={setProfileNav} onGoWallet={() => setScreen("wallet")} onGoHome={() => setScreen("home")} myHistory={[]} onLogout={() => setScreen("login")} onGoPromo={() => setScreen("promotion")} onGoActivity={() => setScreen("activity")} />}
       {screen === "settings" && <SettingsScreen user={user} onBack={() => setScreen("profile")} />}
       {screen === "wallet" && <WalletScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setScreen("home")} />}
       <FloatingHelp show={!isPlaying} user={user} />

@@ -89,7 +89,7 @@ function SlotGrid({ games, onSelectGame }) {
   );
 }
 
-export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet, onGoActivity }) {
+export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet, onGoActivity, onGoPromo }) {
   const [activeNav, setActiveNav] = useState("home");
   const [activeCat, setActiveCat] = useState("popular");
   const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Player";
@@ -204,7 +204,7 @@ export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, o
         )}
       </div>
 
-    <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={onGoProfile} onGoHome={() => {}} onGoActivity={onGoActivity} />
+    <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={onGoProfile} onGoHome={() => {}} onGoActivity={onGoActivity} onGoPromo={onGoPromo} />
     </div>
   );
 }

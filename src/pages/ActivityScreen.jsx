@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { G, gradient } from "../constants";
 import BottomNav from "../components/BottomNav";
+import { G, gradient } from "../constants";
 import {
   getBets, getRebateData, claimRebate,
   redeemGiftCode, getCheckinData, claimCheckin,
@@ -430,7 +430,7 @@ function LuckySpinScreen({ onBack, balance, setBalance }) {
 
         <div style={{ marginTop: 20, background: "#fff", borderRadius: 16, padding: 16, textAlign: "left", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 8 }}>📋 Rules</div>
-          {["One free spin per day", "Must make a deposit today to spin", "Winnings credited instantly to balance", "Spin the wheel and win up to ৳200"].map((r, i) => (
+          {["One free spin per day", "Must make a deposit today to spin", "Winnings credited instantly to balance", "Wheel shows ৳5–৳200 · actual payout ৳5 or ৳10"].map((r, i) => (
             <div key={i} style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>◆ {r}</div>
           ))}
         </div>
@@ -547,7 +547,7 @@ function DepositBonusScreen({ onBack, balance, setBalance }) {
 // ══════════════════════════════════════════════════════════════════
 // MAIN ACTIVITY SCREEN
 // ══════════════════════════════════════════════════════════════════
-export default function ActivityScreen({ user, balance, setBalance, onGoHome, onGoWallet, onGoProfile }) {
+export default function ActivityScreen({ user, balance, setBalance, onGoHome, onGoWallet, onGoProfile, onGoPromo }) {
   const [subScreen, setSubScreen] = useState(null);
 
   if (subScreen === "award") return <ActivityAwardScreen onBack={() => setSubScreen(null)} balance={balance} setBalance={setBalance} />;
@@ -615,7 +615,7 @@ export default function ActivityScreen({ user, balance, setBalance, onGoHome, on
             </div>
           ))}
         </div>
-     </div>
+      </div>
       <BottomNav
         activeNav="activity"
         setActiveNav={() => {}}
@@ -623,6 +623,7 @@ export default function ActivityScreen({ user, balance, setBalance, onGoHome, on
         onGoWallet={onGoWallet}
         onGoProfile={onGoProfile}
         onGoActivity={() => {}}
+        onGoPromo={onGoPromo}
       />
     </div>
   );

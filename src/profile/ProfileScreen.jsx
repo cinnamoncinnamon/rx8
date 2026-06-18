@@ -338,7 +338,7 @@ function VIPScreen({ onBack }) {
   );
 }
 
-export default function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome, myHistory, onLogout }) {
+export default function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome, myHistory, onLogout , onGoActivity, onGoPromo}) {
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [subScreen, setSubScreen] = useState(null);
@@ -485,7 +485,7 @@ export default function ProfileScreen({ user, balance, accounts, onBack, onGoSet
         </button>
       </div>
 
-      <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={()=>{}} onGoHome={onGoHome} />
+      <BottomNav activeNav={activeNav} setActiveNav={setActiveNav} onGoWallet={onGoWallet} onGoProfile={()=>{}} onGoHome={onGoHome} onGoActivity={onGoActivity} onGoPromo={onGoPromo} />
     </div>
   );
 }
