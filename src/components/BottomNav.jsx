@@ -1,7 +1,7 @@
 import React from "react";
 import { G, gradient } from "../constants";
 
-export default function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoProfile, onGoHome }) {
+export default function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoProfile, onGoHome, onGoActivity }) {
   const navItems = [
     {
       id: "home",
@@ -85,6 +85,8 @@ export default function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoPro
             if (n.id === "wallet") onGoWallet && onGoWallet();
             if (n.id === "account") onGoProfile && onGoProfile();
             if (n.id === "home") onGoHome && onGoHome();
+            if (n.id === "activity") onGoActivity && onGoActivity();
+            if (n.id === "promo") onGoActivity && onGoActivity(); // promo → activity for now
           }}
           style={{
             flex: 1,

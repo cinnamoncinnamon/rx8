@@ -44,12 +44,15 @@ const initialGrid = () =>
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
+export function GoldenRelicsSlot({ balance, setBalance, bet, setBet, onBack }) {
   const [grid, setGrid]           = useState(() => initialGrid());
   const [spinning, setSpinning]   = useState(() => Array(REELS).fill(false));
   const [wins, setWins]           = useState([]);
   const [winTotal, setWinTotal]   = useState(0);
   const [auto, setAuto]           = useState(false);
+  
+
+  const [turbo, setTurbo]         = useState(false);
   const [shock, setShock]         = useState(0);
   const [history, setHistory]     = useState([]);
 
@@ -262,7 +265,7 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
             });
           }
         }
-      }, 500 + i * 280);
+      }, turbo ? 100 + i * 60 : 500 + i * 280);
     });
   }, [bet, canSpin, emit, evaluateWins, freeSpins, setBalance]);
 
@@ -378,8 +381,7 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
             <button className="gr-btn-aqua" onClick={() => setBet(Math.min(500, bet + 5))} disabled={isSpinning || inBonus}>+</button>
           </div>
         </Panel>
-
-        <div className="gr-spin-col">
+<div className="gr-spin-col">
           <button
             onClick={doSpin}
             disabled={!canSpin}
@@ -391,13 +393,22 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
               <span className="gr-spin-sub">{isSpinning ? "REELING" : inBonus ? `×${BONUS_WIN_MULTIPLIER}` : "TAP"}</span>
             </div>
           </button>
-          <button
-            onClick={() => setAuto((a) => !a)}
-            disabled={inBonus}
-            className={`gr-auto-btn${auto ? " gr-auto-btn--on" : ""}`}
-          >
-            AUTO {auto ? "ON" : "OFF"}
-          </button>
+          <div style={{display:"flex", gap:6, marginTop:6}}>
+            <button
+              onClick={() => setAuto((a) => !a)}
+              disabled={inBonus}
+              className={`gr-auto-btn${auto ? " gr-auto-btn--on" : ""}`}
+            >
+              AUTO {auto ? "ON" : "OFF"}
+            </button>
+            <button
+              onClick={() => setTurbo((t) => !t)}
+              disabled={inBonus}
+              className={`gr-auto-btn${turbo ? " gr-auto-btn--on" : ""}`}
+            >
+              TURBO {turbo ? "ON" : "OFF"}
+            </button>
+          </div>
         </div>
 
         <Panel label="WIN">
@@ -406,7 +417,7 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
         </Panel>
       </div>
 
-     {/* Quick bets */}
+      {/* Quick bets */}
       <div className="gr-quick-bets">
         {[5, 10, 25, 50, 100, 200].map((v) => (
           <button
@@ -418,14 +429,17 @@ export function GoldenRelicsSlot({ balance, setBalance, bet, setBet }) {
         ))}
       </div>
 
+      {/* Back button */}
+      <div style={{width:"100%", marginTop:10}}>
+        <button onClick={onBack} style={{background:"rgba(94,231,255,0.1)", border:"1px solid rgba(94,231,255,0.4)", color:"#5ee7ff", fontSize:14, cursor:"pointer", borderRadius:8, padding:"6px 14px", letterSpacing:2}}>‹ BACK</button>
+      </div>
+
     </div>
   );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
      
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Panel({ label, children }) {
   return (
