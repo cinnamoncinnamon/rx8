@@ -28,7 +28,7 @@ const POPULAR_GAMES = [
 const LOTTERY_GAMES = [
   { id:"wingo",    name:"Win Go",    desc:"Guess Number · Green/Red/Violet",   emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
   { id:"roadrush", name:"Road Rush", desc:"Drive & cash out before you crash!", emoji:"🚗", bg:"linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)", tag:"NEW" },
-  { id:"k3",       name:"K3",        desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎲", bg:"linear-gradient(135deg,#F97316,#FBBF24)", soon:true },
+ { id:"k3", name:"K3", desc:"Guess Number · Big/Small/Odd/Even", emoji:"🎲", bg:"linear-gradient(135deg,#F97316,#FBBF24)", soon:false },
   { id:"5d",       name:"5D",        desc:"5 digit prediction game",           emoji:"🎯", bg:"linear-gradient(135deg,#22C55E,#16A34A)", soon:true },
   { id:"trx",      name:"Trx Win",   desc:"Guess Number · Green/Red/Violet",   emoji:"💎", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", soon:true },
 ];

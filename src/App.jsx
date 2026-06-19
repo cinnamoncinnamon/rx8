@@ -18,6 +18,7 @@ import SuperElementSlot from "./games/slots/elementsfury/SuperElementSlot";
 import GoldenRelicsSlot from "./games/slots/goldenrelics/GoldenRelicsSlot";
 import ActivityScreen from "./pages/ActivityScreen";
 import PromotionScreen from "./pages/PromotionScreen";
+import K3DiceGame from "./games/K3DiceGame/K3DiceGame";
 
 export default function App() {
   const [screen, setScreen] = useState("login");
@@ -41,6 +42,7 @@ export default function App() {
       {screen === "trading" && <TradingGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "motoride" && <MotorideGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "roadrush" && <RoadRushGame onExit={() => setScreen("home")} />}
+        {screen === "k3" && (<K3DiceGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />)}
       {screen === "slots6" && <TombRaidersSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots7" && <SuperElementSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots8" && <GoldenRelicsSlot balance={balance} setBalance={setBalance} bet={10} setBet={() => {}} onBack={() => setScreen("home")} />}
