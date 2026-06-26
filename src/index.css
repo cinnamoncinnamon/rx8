@@ -1,3 +1,4 @@
+```css
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -60,12 +61,8 @@ body {
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
 }
-
 h1,
 h2 {
   font-family: var(--heading);
@@ -109,3 +106,5 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+```

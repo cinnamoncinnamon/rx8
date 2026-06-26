@@ -59,7 +59,7 @@ const MODES = WINGO_MODES_DEF;
 
 function BetModal({ type, label, color, onConfirm, onClose, multiplier, setMultiplier, balance }) {
   const [amount, setAmount] = useState(10);
-  const presets = [10, 25, 50, 100, 200];
+  const presets = [1, 2, 5, 10,15,20, 25, 50, 100, 200];
   const bgMap = { green:"#22C55E", violet:"#7C3AED", red:"#EF4444", big:"#F97316", small:"#3B82F6" };
   const bg = bgMap[color] || "#EF4444";
   return (

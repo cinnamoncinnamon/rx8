@@ -29,7 +29,7 @@ export default function App() {
   const isPlaying = screen === "wingo" || screen === "aviator" || screen === "trading";
 
   return (
-    <div style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
+    <div style={{ maxWidth: 480, margin: "0 auto", position: "relative", minHeight: "100vh", overflowY: "auto" }}>
       <style>{CSS}</style>
       {screen === "login" && <LoginScreen onLogin={(u) => { setUser(u); setScreen("register"); }} onGotoRegister={() => setScreen("register")} />}
       {screen === "register" && <RegisterScreen onRegister={(u) => { setUser(u); setScreen("deposit"); }} onBack={() => setScreen("login")} />}
@@ -45,7 +45,7 @@ export default function App() {
         {screen === "k3" && (<K3DiceGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />)}
       {screen === "slots6" && <TombRaidersSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots7" && <SuperElementSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
-      {screen === "slots8" && <GoldenRelicsSlot balance={balance} setBalance={setBalance} bet={10} setBet={() => {}} onBack={() => setScreen("home")} />}
+      {screen === "slots8" && <GoldenRelicsSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "profile" && <ProfileScreen user={user} balance={balance} accounts={accounts} onBack={() => setScreen("home")} onGoSettings={() => setScreen("settings")} activeNav={profileNav} setActiveNav={setProfileNav} onGoWallet={() => setScreen("wallet")} onGoHome={() => setScreen("home")} myHistory={[]} onLogout={() => setScreen("login")} onGoPromo={() => setScreen("promotion")} onGoActivity={() => setScreen("activity")} />}
       {screen === "settings" && <SettingsScreen user={user} onBack={() => setScreen("profile")} />}
       {screen === "wallet" && <WalletScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setScreen("home")} />}
