@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
 import SubHeader from "../components/SubHeader";
+import { checkRateLimit, recordFailedAttempt, clearRateLimit } from "../utils/rateLimiter";
 
 // ── Donut chart ──────────────────────────────────────────────────────────────
 function Donut({ pct, color, size = 90 }) {
@@ -42,6 +43,9 @@ function DepositScreen({ balance, setBalance, onBack }) {
   const doDeposit = () => {
     const a = parseFloat(amount);
     if (!a || a <= 0) return;
+    const check = checkRateLimit("deposit");
+    if (!check.allowed) { setDone(check.message); setTimeout(() => setDone(""), 5000); return; }
+    clearRateLimit("deposit");
     setBalance(b => b + a);
     setDone(`✅ Deposited ৳${a.toFixed(2)} successfully!`);
     setAmount("");
@@ -158,6 +162,9 @@ function WithdrawScreen({ balance, setBalance, accounts, onBack }) {
   const doWithdraw = () => {
     const a = parseFloat(amount);
     if (!a || a <= 0 || a > withdrawable) return;
+    const check = checkRateLimit("withdraw");
+    if (!check.allowed) { setDone(check.message); setTimeout(() => setDone(""), 5000); return; }
+    clearRateLimit("withdraw");
     setBalance(b => b - a);
     setDone(`✅ Withdrawal of ৳${a.toFixed(2)} requested!`);
     setAmount("");

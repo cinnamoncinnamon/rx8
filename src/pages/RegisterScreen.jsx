@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
+import { checkRateLimit, recordFailedAttempt, clearRateLimit, remainingAttempts } from "../utils/rateLimiter";
 
 export default function RegisterScreen({ onRegister, onBack }) {
   const [method, setMethod] = useState("mobile");
@@ -12,9 +13,19 @@ export default function RegisterScreen({ onRegister, onBack }) {
   const submit = () => {
     if (!input || !pass || !confirm) { setErr("Fill all fields."); return; }
     if (pass !== confirm) { setErr("Passwords don't match."); return; }
+
+    const check = checkRateLimit("register");
+    if (!check.allowed) { setErr(check.message); return; }
+
     setLoading(true);
-    setTimeout(() => onRegister({ contact: input, method }), 1200);
+    setTimeout(() => {
+      clearRateLimit("register");
+      onRegister({ contact: input, method });
+    }, 1200);
   };
+
+  const rem = remainingAttempts("register");
+  const locked = !checkRateLimit("register").allowed;
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#EF5350 0%,#FF8A80 42%,#fff 72%)", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Poppins',sans-serif" }}>
@@ -54,8 +65,14 @@ export default function RegisterScreen({ onRegister, onBack }) {
 
         {err && <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8 }}>{err}</div>}
 
-        <button onClick={submit}
-          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        {rem <= 1 && rem > 0 && !err && (
+          <div style={{ color: "#FF8F00", fontSize: 12, marginBottom: 8 }}>
+            ⚠️ Last attempt before temporary lockout.
+          </div>
+        )}
+
+        <button onClick={submit} disabled={loading || locked}
+          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading || locked ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: loading || locked ? "not-allowed" : "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {loading ? (
             <><div style={{ width: 18, height: 18, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Creating...</>
           ) : "Create Account →"}
