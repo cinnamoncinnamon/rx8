@@ -15,7 +15,7 @@ export default function DepositSetup({ contact, onDone }) {
       <style>{CSS}</style>
       <div style={{ paddingTop:50, paddingBottom:16, textAlign:"center" }}>
         <div style={{ fontSize:36, fontWeight:900, color:"#fff", letterSpacing:2 }}>
-          <span style={{ fontStyle:"italic", color:"#FFE082" }}>H</span>GNICE
+          <span style={{ fontStyle:"italic", color:"#FFE082" }}>S</span>PINOVA
         </div>
         <div style={{ color:"rgba(255,255,255,.8)", fontSize:13, marginTop:4 }}>💳 Payment Setup</div>
       </div>

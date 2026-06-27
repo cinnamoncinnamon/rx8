@@ -21,12 +21,12 @@ export default function RegisterScreen({ onRegister, onBack }) {
       <style>{CSS}</style>
       <div style={{ paddingTop: 55, paddingBottom: 16, textAlign: "center" }}>
         <div style={{ fontSize: 38, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>
-          <span style={{ fontStyle: "italic", color: "#FFE082" }}>H</span>GNICE
+          <span style={{ fontStyle: "italic", color: "#FFE082" }}>S</span>PINOVA
         </div>
       </div>
 
       <div style={{ width: "92%", maxWidth: 400, background: "#fff", borderRadius: 24, padding: "28px 24px 32px", boxShadow: "0 20px 60px #EF535044" }}>
-        <div style={{ fontWeight: 800, fontSize: 22, color: G.text, marginBottom: 4 }}>Join HGNICE 🎮</div>
+        <div style={{ fontWeight: 800, fontSize: 22, color: G.text, marginBottom: 4 }}>Join SPINOVA 🎮</div>
         <div style={{ color: G.sub, fontSize: 13, marginBottom: 20 }}>Start winning today</div>
 
         {/* Method toggle */}

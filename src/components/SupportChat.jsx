@@ -11,7 +11,7 @@ const AUTO_REPLIES = [
 ];
 
 export default function SupportChat({ onClose, user }) {
-  const [messages, setMessages] = useState([{ from: "support", text: "👋 Welcome to HGNICE Support! How can I help you today?", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+  const [messages, setMessages] = useState([{ from: "support", text: "👋 Welcome to SPINOVA Support! How can I help you today?", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef(null);
@@ -36,7 +36,7 @@ export default function SupportChat({ onClose, user }) {
         <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(255,255,255,.8)", fontSize:22, cursor:"pointer" }}>‹</button>
         <div style={{ width:38, height:38, borderRadius:"50%", background:"#128C7E", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🎧</div>
         <div style={{ flex:1 }}>
-          <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>HGNICE Support</div>
+          <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>SPINOVA Support</div>
           <div style={{ color:"#B2DFDB", fontSize:11 }}>{typing ? "typing..." : "🟢 Online"}</div>
         </div>
       </div>

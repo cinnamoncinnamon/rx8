@@ -252,7 +252,7 @@ function BeginnerGuideScreen({ onBack }) {
       <div style={{padding:"14px"}}>
         <div style={{background:gradient,borderRadius:16,padding:"16px 20px",marginBottom:14,textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:6}}>👋</div>
-          <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Welcome to HGNICE!</div>
+          <div style={{color:"#fff",fontWeight:800,fontSize:16}}>Welcome to SPINOVA!</div>
           <div style={{color:"rgba(255,255,255,.8)",fontSize:12,marginTop:4}}>Follow these steps to start winning</div>
         </div>
         {steps.map((s,i)=>(
@@ -275,14 +275,14 @@ function AboutUsScreen({ onBack }) {
       <SubHeader title="About Us" onBack={onBack}/>
       <div style={{padding:"14px"}}>
         <div style={{background:gradient,borderRadius:16,padding:"32px 20px",textAlign:"center",marginBottom:14}}>
-          <div style={{fontSize:44,fontWeight:900,color:"#fff",letterSpacing:2}}><span style={{fontStyle:"italic",color:"#FFE082"}}>H</span>GNICE</div>
+          <div style={{fontSize:44,fontWeight:900,color:"#fff",letterSpacing:2}}><span style={{fontStyle:"italic",color:"#FFE082"}}>S</span>PINOVA</div>
           <div style={{color:"rgba(255,255,255,.8)",fontSize:12,letterSpacing:4,marginTop:4}}>GAMING PLATFORM</div>
           <div style={{background:"rgba(255,255,255,.2)",borderRadius:20,padding:"4px 16px",display:"inline-block",marginTop:12,color:"#fff",fontSize:12,fontWeight:600}}>Version 1.0.9</div>
         </div>
         {[
-          {icon:"🏢",title:"Company",value:"HGNICE Entertainment Ltd."},
+          {icon:"🏢",title:"Company",value:"SPINOVA Entertainment Ltd."},
           {icon:"🌍",title:"Region",value:"Bangladesh · Asia"},
-          {icon:"📧",title:"Support Email",value:"support@hgnice.com"},
+          {icon:"📧",title:"Support Email",value:"support@spinova.com"},
           {icon:"💬",title:"Live Chat",value:"Available 24/7"},
           {icon:"🔒",title:"Security",value:"256-bit SSL Encrypted"},
           {icon:"⚖️",title:"License",value:"Certified RNG & Fair Play"},

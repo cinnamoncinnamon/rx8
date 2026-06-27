@@ -24,7 +24,7 @@ export default function LoginScreen({ onLogin, onGotoRegister }) {
       <style>{CSS}</style>
       <div style={{ paddingTop: 60, paddingBottom: 20, opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(-30px)", transition: "all .7s ease", textAlign: "center" }}>
         <div style={{ fontSize: 44, fontWeight: 900, color: "#fff", letterSpacing: 2, textShadow: "0 4px 20px #0003" }}>
-          <span style={{ fontStyle: "italic", color: "#FFE082" }}>H</span>GNICE
+          <span style={{ fontStyle: "italic", color: "#FFE082" }}>S</span>PINOVA
         </div>
         <div style={{ color: "rgba(255,255,255,.8)", fontSize: 12, marginTop: 4, letterSpacing: 4 }}>GAMING PLATFORM</div>
       </div>

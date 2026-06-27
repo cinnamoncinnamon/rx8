@@ -227,7 +227,7 @@ function TradingLoader({ onDone }) {
       ctx.textAlign   = "center";
       ctx.fillStyle   = "rgba(0,200,136,0.5)";
       ctx.shadowBlur  = 0;
-      ctx.fillText("HGNICE TRADING PLATFORM", W / 2, H * 0.21);
+      ctx.fillText("SPINOVA TRADING PLATFORM", W / 2, H * 0.21);
       ctx.restore();
 
       const bW = 240, bX = (W - bW) / 2, bY = H * 0.87;

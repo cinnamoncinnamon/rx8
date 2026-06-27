@@ -171,7 +171,7 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
       <div style={{ background:gradient, padding:"0" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px" }}>
           <button onClick={onBack} style={{ background:"rgba(255,255,255,.2)", border:"none", color:"#fff", fontSize:18, cursor:"pointer", borderRadius:8, padding:"6px 12px", fontFamily:"'Poppins',sans-serif" }}>‹ Back</button>
-          <div style={{ fontSize:20, fontWeight:900, color:"#fff", letterSpacing:1 }}><span style={{ fontStyle:"italic", color:"#FFE082" }}>H</span>GNICE</div>
+          <div style={{ fontSize:20, fontWeight:900, color:"#fff", letterSpacing:1 }}><span style={{ fontStyle:"italic", color:"#FFE082" }}>S</span>PINOVA</div>
           <div style={{ background:"rgba(255,255,255,.2)", borderRadius:16, padding:"5px 12px", color:"#fff", fontWeight:700, fontSize:13 }}>৳{balance.toFixed(2)}</div>
         </div>
         <div style={{ display:"flex", padding:"0 10px 12px", gap:6 }}>
