@@ -37,14 +37,20 @@ function mkAudio() {
       src.start(c.currentTime + delay); src.stop(c.currentTime + delay + dur + 0.01);
     } catch (e) {}
   };
-  return {
+
+  // expose ctx so we can suspend/resume it
+  const getSfx = () => ({
     engine:  () => { tone(80,'sawtooth',0.12,0.12); tone(160,'sawtooth',0.12,0.06,0.03); },
     rev:     (s) => { const f = 60 + s * 120; tone(f,'sawtooth',0.08,0.1,0,f*1.4); },
     cashout: () => { tone(523,'sine',0.15,0.3); tone(659,'sine',0.15,0.28,0.08); tone(784,'sine',0.2,0.32,0.16); tone(1047,'sine',0.25,0.28,0.26); },
     crash:   () => { noise(0.6,0.5); tone(120,'sawtooth',0.5,0.3,0,30); tone(200,'square',0.3,0.2,0.05,40); },
     bet:     () => { tone(400,'sine',0.08,0.2); tone(600,'sine',0.06,0.15,0.06); },
     waiting: () => tone(300,'sine',0.1,0.08),
-  };
+    // suspend stops all currently-scheduled audio immediately
+    suspend: () => { try { if (ctx) ctx.suspend(); } catch(e) {} },
+    resume:  () => { try { if (ctx) ctx.resume(); } catch(e) {} },
+  });
+  return getSfx();
 }
 
 // ── Singleton game state ───────────────────────────────────────────────────
@@ -65,7 +71,7 @@ const GAME = {
   autoCashout: '',
   balance: 1000,
   particles: [],
-  muted: false,           // ← mute flag
+  muted: false,
 
   onUpdate: null,
   onBalance: null,
@@ -77,7 +83,7 @@ const GAME = {
   _canvas: null,
   _bgImages: [],
   _bikerImg: null,
-  _started: false,
+  _started: false,   // market loop is running
 };
 
 // must be after GAME is declared so tone/noise can read GAME.muted
@@ -176,7 +182,6 @@ function genCrash() {
 }
 
 function gameStartWaiting() {
-  // cancel everything first
   cancelAnimationFrame(GAME._raf);
   clearInterval(GAME._engineIv);
   clearInterval(GAME._waitIv);
@@ -229,7 +234,7 @@ function gameStartRound() {
   GAME._engineIv = setInterval(() => SFX.engine(), 200);
 
   const loop = (now) => {
-    if (GAME.phase !== 'running') return; // orphan guard
+    if (GAME.phase !== 'running') return;
 
     const elapsed = (now - GAME.startTime) / 1000;
     const m = Math.pow(Math.E, elapsed * 0.18);
@@ -304,6 +309,7 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
   const [shake, setShake] = useState(false);
   const [muted, setMuted] = useState(GAME.muted);
   const prevCrashedRef = useRef(false);
+  const [loading, setLoading] = useState(!GAME._started); // only show on first mount
 
   useEffect(() => { GAME.balance = balance; }, [balance]);
 
@@ -312,23 +318,26 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
     GAME.onUpdate = () => forceUpdate(n => n+1);
     GAME.onBalance = setBalance;
 
+    // ── FIX: market always keeps running; just resume audio and redraw ──
+    SFX.resume();
     if (!GAME._started) {
       GAME._started = true;
       gameStartWaiting();
+      // dismiss loading screen after 1.5s
+      setTimeout(() => setLoading(false), 1500);
     } else {
-      gameDraw();
+      gameDraw(); // repaint onto the newly-mounted canvas
     }
 
     return () => {
-      // ── FIX #3: kill sound when navigating away ──────────────────────
-      clearInterval(GAME._engineIv);
-      clearInterval(GAME._waitIv);
-      clearTimeout(GAME._waitT);
-      cancelAnimationFrame(GAME._raf);
-      GAME._started  = false; // so it restarts cleanly on remount
-      GAME._canvas   = null;
-      GAME.onUpdate  = null;
+      // ── FIX: on back, STOP sound but KEEP the market loop alive ──────
+      SFX.suspend();               // immediately silences all AudioContext sound
+      clearInterval(GAME._engineIv); // stop the repeating engine interval
+      // do NOT cancel _raf / _waitIv / _waitT — the market keeps going
+      GAME._canvas   = null;       // no canvas to draw on while away
+      GAME.onUpdate  = null;       // don't try to setState on unmounted component
       GAME.onBalance = null;
+      // intentionally NOT setting GAME._started = false
     };
   }, []); // eslint-disable-line
 
@@ -349,10 +358,14 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
   // ── Mute toggle ───────────────────────────────────────────────────────
   const toggleMute = () => {
     GAME.muted = !GAME.muted;
-    // if we just muted, also stop the engine interval sound immediately
-    if (GAME.muted) clearInterval(GAME._engineIv);
-    else if (GAME.phase === 'running') {
-      GAME._engineIv = setInterval(() => SFX.engine(), 200);
+    if (GAME.muted) {
+      clearInterval(GAME._engineIv);
+      SFX.suspend();
+    } else {
+      SFX.resume();
+      if (GAME.phase === 'running') {
+        GAME._engineIv = setInterval(() => SFX.engine(), 200);
+      }
     }
     setMuted(GAME.muted);
   };
@@ -419,7 +432,98 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
         @keyframes floatUp{0%{transform:translateY(0) translateX(-50%);opacity:1}100%{transform:translateY(-60px) translateX(-50%);opacity:0}}
         .shake{animation:shake 0.55s ease}
         .pop{animation:popIn 0.28s ease forwards}
+
+        @keyframes bikeRide{
+          0%   { transform: translateX(-120px) scaleX(-1); }
+          100% { transform: translateX(calc(100vw + 120px)) scaleX(-1); }
+        }
+        @keyframes roadScroll{
+          0%   { background-position: 0 0; }
+          100% { background-position: -400px 0; }
+        }
+        @keyframes loadFadeOut{
+          0%   { opacity:1; }
+          100% { opacity:0; pointer-events:none; }
+        }
+        @keyframes titlePop{
+          0%   { opacity:0; transform:scale(0.7) translateY(10px); }
+          60%  { transform:scale(1.08) translateY(-2px); }
+          100% { opacity:1; transform:scale(1) translateY(0); }
+        }
+        @keyframes bikeBob{
+          0%,100%{ transform: translateX(-120px) scaleX(-1) translateY(0px); }
+          50%    { transform: translateX(-120px) scaleX(-1) translateY(-6px); }
+        }
+        @keyframes exhaustPuff{
+          0%  { opacity:0.7; transform:scale(0.5) translateX(0); }
+          100%{ opacity:0;   transform:scale(2)   translateX(-30px); }
+        }
+        .moto-loader {
+          position:fixed; inset:0; z-index:9999;
+          background:linear-gradient(180deg,#160600 0%,#0a0200 100%);
+          display:flex; flex-direction:column;
+          align-items:center; justify-content:center;
+          overflow:hidden;
+        }
+        .moto-loader.fade-out {
+          animation: loadFadeOut 0.4s ease forwards;
+        }
+        .moto-road {
+          position:absolute; bottom:0; left:0; right:0; height:56px;
+          background: repeating-linear-gradient(90deg,
+            #2a1400 0px, #2a1400 60px,
+            #f97316 60px, #f97316 80px,
+            #2a1400 80px, #2a1400 140px
+          );
+          animation: roadScroll 0.35s linear infinite;
+          border-top: 3px solid rgba(249,115,22,0.5);
+        }
+        .moto-bike {
+          position:absolute;
+          bottom: 56px;
+          left: 0;
+          font-size: 64px;
+          line-height:1;
+          animation: bikeRide 1.1s cubic-bezier(0.4,0,0.6,1) forwards;
+          filter: drop-shadow(0 0 18px rgba(249,115,22,0.8));
+        }
+        .moto-exhaust {
+          position:absolute;
+          bottom:96px;
+          left:20px;
+          font-size:18px;
+          animation: exhaustPuff 0.4s ease forwards;
+        }
+        .moto-title {
+          font-family:'Arial Black',Arial,sans-serif;
+          font-size: clamp(28px,8vw,48px);
+          font-weight:900;
+          letter-spacing:6px;
+          color:#f97316;
+          text-shadow: 0 0 30px rgba(249,115,22,0.9), 0 0 60px rgba(249,115,22,0.4);
+          animation: titlePop 0.5s ease forwards;
+          margin-bottom: 12px;
+        }
+        .moto-sub {
+          font-family:'Arial Black',Arial,sans-serif;
+          font-size:11px;
+          letter-spacing:5px;
+          color:rgba(249,115,22,0.45);
+          animation: titlePop 0.5s ease 0.15s both;
+        }
       `}</style>
+
+      {/* ── Loading Screen ── */}
+      {loading && (
+        <div className="moto-loader">
+          <div className="moto-title">🏍️ MOTORIDE</div>
+          <div className="moto-sub">LOADING...</div>
+          {/* bike rides across */}
+          <div className="moto-bike">🏍️</div>
+          {/* road strip at bottom */}
+          <div className="moto-road" />
+        </div>
+      )}
 
       {phase === 'crashed' && (
         <div style={{ position:'fixed', inset:0, background:'rgba(239,68,68,0.28)',
@@ -440,9 +544,7 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           🏍️ MOTORIDE
         </div>
 
-        {/* right side: balance + mute */}
         <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-          {/* ── FIX #1: mute button ── */}
           <button onClick={toggleMute} style={{
             background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(249,115,22,0.12)',
             border: muted ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(249,115,22,0.3)',
@@ -518,7 +620,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
         </div>
       </div>
 
-      {/* ── FIX #2: queued badge BELOW canvas, not overlapping ── */}
       {betQueued && phase === 'running' && (
         <div style={{
           width:'100%', maxWidth:SCENE_W, marginTop:6,
@@ -530,7 +631,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
         </div>
       )}
 
-      {/* float win */}
       {cashedOut && cashedMult && (
         <div key={cashedMult} style={{
           position:'fixed', top:'36%', left:'50%',
@@ -548,7 +648,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
         background:cardBg, borderRadius:16, padding:14,
         border:'1px solid rgba(249,115,22,0.18)', position:'relative', zIndex:1 }}>
 
-        {/* Bet amount */}
         <div style={{ marginBottom:10 }}>
           <div style={{ fontSize:10, letterSpacing:3, color:'rgba(249,115,22,0.45)', marginBottom:6 }}>
             BET AMOUNT
@@ -585,7 +684,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           </div>
         </div>
 
-        {/* Auto cashout */}
         <div style={{ marginBottom:12 }}>
           <div style={{ fontSize:10, letterSpacing:3, color:'rgba(249,115,22,0.45)', marginBottom:6 }}>
             AUTO CASH OUT AT
@@ -609,7 +707,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           </div>
         </div>
 
-        {/* Case 1: cashed out */}
         {hasBet && cashedOut && (
           <div style={{ width:'100%', padding:16, borderRadius:12,
             background:'rgba(245,158,11,0.1)', border:'2px solid rgba(245,158,11,0.4)',
@@ -618,7 +715,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           </div>
         )}
 
-        {/* Case 2: active bet, running — CASH OUT button */}
         {hasBet && !cashedOut && phase === 'running' && (
           <button onClick={cashout}
             style={{ width:'100%', padding:16, borderRadius:12,
@@ -632,7 +728,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           </button>
         )}
 
-        {/* Case 3: queued — cancel button */}
         {betQueued && !hasBet && (
           <button onClick={cancelQueue}
             style={{ width:'100%', padding:16, borderRadius:12,
@@ -643,7 +738,6 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
           </button>
         )}
 
-        {/* Case 4: no bet, no queue */}
         {!hasBet && !betQueued && (
           <button onClick={placeBet} disabled={phase === 'crashed'}
             style={{ width:'100%', padding:16, borderRadius:12,
