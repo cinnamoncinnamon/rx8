@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { motorideCrashPoint } from "../../utils/gameEngine";
 import bikerImg from "./motoassets/biker.png";
 import bg1 from "./motoassets/bg1.jpg";
 import bg2 from "./motoassets/bg2.jpg";
@@ -171,15 +172,7 @@ function gameDoCashout(m) {
   gameNotify();
 }
 
-function genCrash() {
-  const r = Math.random();
-  if (r < 0.05) return 1.00 + Math.random() * 0.05;
-  if (r < 0.38) return 1.05 + Math.pow(Math.random(),0.5)*1.2;
-  if (r < 0.63) return 1.5  + Math.pow(Math.random(),0.7)*3.5;
-  if (r < 0.83) return 5    + Math.pow(Math.random(),0.8)*25;
-  if (r < 0.95) return 30   + Math.random()*70;
-  return 100 + Math.random()*300;
-}
+const genCrash = motorideCrashPoint;
 
 function gameStartWaiting() {
   cancelAnimationFrame(GAME._raf);

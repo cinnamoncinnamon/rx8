@@ -99,12 +99,12 @@ export function aviatorCrashPoint() {
 
 export function motorideCrashPoint() {
   const _r = _rv();
-  if (_r < 0.01) return 1.00 + _rv() * 0.02;
-  if (_r < 0.40) return 1.0  + Math.pow(_rv(), 0.6) * 1.5;
-  if (_r < 0.70) return 2.5  + Math.pow(_rv(), 0.7) * 5;
-  if (_r < 0.88) return 7    + _rv() * 20;
-  if (_r < 0.96) return 27   + _rv() * 73;
-  return 100 + _rv() * 400;
+  if (_r < 0.05) return 1.00 + _rv() * 0.05;
+  if (_r < 0.38) return 1.05 + Math.pow(_rv(), 0.5) * 1.2;
+  if (_r < 0.63) return 1.5  + Math.pow(_rv(), 0.7) * 3.5;
+  if (_r < 0.83) return 5    + Math.pow(_rv(), 0.8) * 25;
+  if (_r < 0.95) return 30   + _rv() * 70;
+  return 100 + _rv() * 300;
 }
 
 // ── Slots (weighted symbol picker) ────────────────────────────────────────────

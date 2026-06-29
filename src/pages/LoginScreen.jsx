@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { G, CSS, gradient } from "../constants";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit, remainingAttempts } from "../utils/rateLimiter";
+import { validateLoginInput } from "../utils/sanitize";
 
 export default function LoginScreen({ onLogin, onGotoRegister }) {
   const [method, setMethod] = useState("mobile");
@@ -18,18 +19,17 @@ export default function LoginScreen({ onLogin, onGotoRegister }) {
   }, []);
 
   const submit = () => {
-    if (!input || !pass) { setErr("Please fill all fields."); return; }
-
     const check = checkRateLimit("login");
     if (!check.allowed) { setErr(check.message); return; }
+
+    const validation = validateLoginInput(method, input, pass);
+    if (!validation.ok) { setErr(validation.message); return; }
 
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      // Simulate: treat any non-empty creds as success for now
-      // On real backend: call recordFailedAttempt("login") on 401, clearRateLimit("login") on 200
       clearRateLimit("login");
-      onLogin({ contact: input, method });
+      onLogin({ contact: validation.contact, method });
     }, 1400);
   };
 
@@ -67,6 +67,7 @@ export default function LoginScreen({ onLogin, onGotoRegister }) {
           <div key={i} style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>{f.label}</div>
             <input type={f.type} value={f.val} onChange={(e) => f.set(e.target.value)} placeholder={f.ph}
+              maxLength={f.type === "password" ? 64 : method === "mobile" ? 15 : 100}
               style={{ width: "100%", padding: "13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E" }} />
           </div>
         ))}

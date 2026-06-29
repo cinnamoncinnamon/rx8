@@ -21,7 +21,8 @@ const _gp = (mid) => {
 import { k3SmartRoll, k3Evaluate } from "../../utils/gameEngine";
 const _smartRoll = k3SmartRoll;
 const _ev = k3Evaluate;
-const _rd = () => [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)]; // UI init only, not outcome
+const _rd = () => [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)]; // UI init only
+const _cl = (d) => { const s=d[0]+d[1]+d[2]; return {sum:s,big:s>=11?"Big":"Small",oddEven:s%2===0?"Even":"Odd"}; }; // UI display only
 
 const _DOT = {
   1:[[50,50]],2:[[30,30],[70,70]],3:[[28,28],[50,50],[72,72]],

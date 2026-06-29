@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit, remainingAttempts } from "../utils/rateLimiter";
+import { validateRegisterInput } from "../utils/sanitize";
+import SlideVerify from "../components/SlideVerify";
 
 export default function RegisterScreen({ onRegister, onBack }) {
   const [method, setMethod] = useState("mobile");
@@ -9,18 +11,27 @@ export default function RegisterScreen({ onRegister, onBack }) {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [verified, setVerified] = useState(false);
+  const [slideReset, setSlideReset] = useState(0);
 
   const submit = () => {
-    if (!input || !pass || !confirm) { setErr("Fill all fields."); return; }
-    if (pass !== confirm) { setErr("Passwords don't match."); return; }
-
     const check = checkRateLimit("register");
     if (!check.allowed) { setErr(check.message); return; }
+
+    if (!verified) { setErr("Please complete the verification slider."); return; }
+
+    const validation = validateRegisterInput(method, input, pass, confirm);
+    if (!validation.ok) {
+      setErr(validation.message);
+      setVerified(false);
+      setSlideReset(r => r + 1);
+      return;
+    }
 
     setLoading(true);
     setTimeout(() => {
       clearRateLimit("register");
-      onRegister({ contact: input, method });
+      onRegister({ contact: validation.contact, method });
     }, 1200);
   };
 
@@ -59,6 +70,7 @@ export default function RegisterScreen({ onRegister, onBack }) {
           <div key={i} style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>{f.label}</div>
             <input type={f.type} value={f.val} onChange={(e) => f.set(e.target.value)} placeholder={f.ph}
+              maxLength={f.type === "password" ? 64 : method === "mobile" ? 15 : 100}
               style={{ width: "100%", padding: "13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E" }} />
           </div>
         ))}
@@ -71,8 +83,10 @@ export default function RegisterScreen({ onRegister, onBack }) {
           </div>
         )}
 
-        <button onClick={submit} disabled={loading || locked}
-          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading || locked ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: loading || locked ? "not-allowed" : "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <SlideVerify onVerify={setVerified} reset={slideReset} />
+
+        <button onClick={submit} disabled={loading || locked || !verified}
+          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading || locked || !verified ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: loading || locked || !verified ? "not-allowed" : "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {loading ? (
             <><div style={{ width: 18, height: 18, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Creating...</>
           ) : "Create Account →"}
