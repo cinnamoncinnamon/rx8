@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { CSS } from "../../constants";
 import lottie from "lottie-web";
+import { aviatorCrashPoint } from "../../utils/gameEngine";
 const BETTING_MS = 5000;
 const CRASH_MS = 3200;
 const GROWTH_RATE = 0.00006;
 
 function generateCrashPoint() {
-  const r = Math.random();
-  if (r < 0.03) return 1.0;
-  const e = Math.pow(2, 32);
-  const h = Math.floor(Math.random() * e);
-  const crash = Math.max(1, Math.floor((100 * e - h) / (e - h)) / 100);
-  return Math.min(crash, 200);
+  return aviatorCrashPoint();
 }
 
 function multiplierAt(elapsedMs) {

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./SuperElementSlot.css";
-
+import { slotPickSymbol } from "../../../utils/gameEngine";
 import water from "../../../assets/elements/sym-water.png";
 import fire from "../../../assets/elements/sym-fire.png";
 import lightning from "../../../assets/elements/sym-lightning.png";
@@ -18,14 +18,10 @@ const SYMBOLS = [
 const REELS = 5;
 const ROWS  = 5;
 
+const _SE_WEIGHTED = SYMBOLS.flatMap(s => Array(Math.round(s.weight)).fill(s));
+
 function pick() {
-  const total = SYMBOLS.reduce((s, x) => s + x.weight, 0);
-  let r = Math.random() * total;
-  for (const s of SYMBOLS) {
-    r -= s.weight;
-    if (r <= 0) return s;
-  }
-  return SYMBOLS[0];
+  return slotPickSymbol(_SE_WEIGHTED);
 }
 
 function newGrid() {

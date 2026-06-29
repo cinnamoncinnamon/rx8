@@ -3,10 +3,11 @@ import { SYMBOLS, SYMBOL_PAY, SYMBOL_WEIGHT, SymbolGlyph } from "./symbols";
 import { mulberry32 } from "./rng";
 import "./GoldenRelicsSlot.css";
 import { UnderwaterScene } from "./UnderwaterScene";
+import { slotPickSymbol } from "../../../utils/gameEngine";
 
 const _R=5,_RW=3,_SC="poseidon",_BSA=10,_BRA=5,_BWM=3,_JS=50000,_JC=0.02,_JT=0.00015,_JBB=0.0005;
 const _WP=(()=>{const p=[];for(const s of SYMBOLS){if(s===_SC)continue;const w=SYMBOL_WEIGHT[s]??1;for(let i=0;i<w;i++)p.push(s);}return p;})();
-const _pk=(rand,sb=0)=>rand()<sb?_SC:_WP[Math.floor(rand()*_WP.length)];
+const _pk=(rand,sb=0)=>rand()<sb?_SC:slotPickSymbol(_WP);
 const _bg=(rand,sb=0)=>Array.from({length:_R},()=>Array.from({length:_RW},()=>_pk(rand,sb)));
 const _ig=()=>Array.from({length:_R},(_,c)=>Array.from({length:_RW},(_,r)=>SYMBOLS[(c*3+r)%SYMBOLS.length]));
 const BET_STEPS=[5,10,25,50,100,200,500];

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { NUM_COLORS, BASE, genHist, CSS, gradient } from "../../constants";
 import Ball from "../../components/Ball";
+import { wingoRoll } from "../../utils/gameEngine";
 
 const WINGO_MODES_DEF = [
   { label: "30s", seconds: 30 },
@@ -17,7 +18,7 @@ const GlobalWingo = (function () {
     const hist = [];
     let period = BigInt(BASE);
     for (let i = 0; i < 50; i++) {
-      const num = Math.floor(Math.random() * 10);
+      const num = wingoRoll();
       hist.unshift({ period: period.toString(), number: num, bigSmall: num >= 5 ? "Big" : "Small", colors: NUM_COLORS[num] });
       period = period - 1n;
     }
@@ -33,7 +34,7 @@ const GlobalWingo = (function () {
         const s = stores[m.seconds];
         s.timeLeft--;
         if (s.timeLeft <= 0) {
-          const winNum = Math.floor(Math.random() * 10);
+          const winNum = wingoRoll();
           const entry = { period: s.currentPeriod, number: winNum, bigSmall: winNum >= 5 ? "Big" : "Small", colors: NUM_COLORS[winNum] };
           s.history = [entry, ...s.history].slice(0, 50);
           s.lastResults = [winNum, ...s.lastResults].slice(0, 5);

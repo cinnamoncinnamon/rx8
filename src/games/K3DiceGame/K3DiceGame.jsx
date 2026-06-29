@@ -18,56 +18,10 @@ const _gp = (mid) => {
   const d = `${n.getFullYear()}${String(n.getMonth()+1).padStart(2,"0")}${String(n.getDate()).padStart(2,"0")}`;
   return `${d}${mid.toUpperCase()}${String(++_pc).padStart(6,"0")}`;
 };
-const _rd = () => [Math.ceil(Math.random()*6),Math.ceil(Math.random()*6),Math.ceil(Math.random()*6)];
-const _cl = (d) => { const s=d[0]+d[1]+d[2]; return {sum:s,big:s>=11?"Big":"Small",oddEven:s%2===0?"Even":"Odd"}; };
-
-function _smartRoll(betMap) {
-  let best=null, bestW=Infinity;
-  for(let t=0;t<60;t++){
-    const d=_rd();
-    const {sum,big,oddEven}=_cl(d);
-    const sorted=[...d].sort((a,b)=>a-b);
-    let w=0;
-    w+=betMap[`total-${sum}`]||0;
-    w+=betMap[`big-big`]||0;
-    w+=betMap[`small-small`]||0;
-    w+=betMap[`even-even`]||0;
-    w+=betMap[`odd-odd`]||0;
-    if(d[0]===d[1]&&d[1]===d[2]){ w+=betMap[`3same-"any3"`]||0; w+=betMap[`3same-${d[0]}`]||0; }
-    _2S.forEach(item=>{ if(d.filter(x=>x===item.pair[0]).length>=2) w+=betMap[`2same-${JSON.stringify(item.pair)}`]||0; });
-    w+=betMap[`diff-"${sorted.join(",")}"`]||0;
-    if(w<bestW){bestW=w;best=d;}
-  }
-  return best||_rd();
-}
-
-function _ev(bet,dice){
-  if(!bet) return {won:false,payout:0};
-  const {type,value,amount}=bet;
-  const {sum,big,oddEven}=_cl(dice);
-  const sorted=[...dice].sort((a,b)=>a-b);
-  let won=false,mult=0;
-  if(type==="big"&&big==="Big"){won=true;mult=2;}
-  if(type==="small"&&big==="Small"){won=true;mult=2;}
-  if(type==="even"&&oddEven==="Even"){won=true;mult=2;}
-  if(type==="odd"&&oddEven==="Odd"){won=true;mult=2;}
-  if(type==="total"&&value===sum){won=true;mult=_TP[value];}
-  if(type==="2same"){
-    const [a,b]=value;
-    const ca=dice.filter(x=>x===a).length, cb=dice.filter(x=>x===b).length;
-    if(a===b&&ca>=2){won=true;mult=17.64;}
-    else if(a!==b&&ca>=1&&cb>=1){won=true;mult=17.64;}
-  }
-  if(type==="3same"){
-    if(value==="any3"&&dice[0]===dice[1]&&dice[1]===dice[2]){won=true;mult=29.4;}
-    else if(typeof value==="number"&&dice.every(d=>d===value)){won=true;mult=176.4;}
-  }
-  if(type==="diff"){
-    const nums=value.split(",").map(Number).sort((a,b)=>a-b);
-    if(JSON.stringify(sorted)===JSON.stringify(nums)){won=true;mult=17.64;}
-  }
-  return {won,payout:won?parseFloat((amount*mult).toFixed(2)):0};
-}
+import { k3SmartRoll, k3Evaluate } from "../../utils/gameEngine";
+const _smartRoll = k3SmartRoll;
+const _ev = k3Evaluate;
+const _rd = () => [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)]; // UI init only, not outcome
 
 const _DOT = {
   1:[[50,50]],2:[[30,30],[70,70]],3:[[28,28],[50,50],[72,72]],

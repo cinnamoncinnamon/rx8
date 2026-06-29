@@ -12,6 +12,7 @@ import imgTorch from "../../../assets/symbols/torch.png";
 import imgRelic from "../../../assets/symbols/relic.png";
 import imgWild from "../../../assets/symbols/wild.png";
 import imgScat from "../../../assets/symbols/scat.png";
+import { slotPickSymbol } from "../../../utils/gameEngine";
 
 const SYMBOL_IMAGES = {
   lara: imgLara, idol: imgIdol, chest: imgChest, map: imgMap, key: imgKey,
@@ -33,7 +34,7 @@ const SYMBOLS = [
 
 const BY_ID = Object.fromEntries(SYMBOLS.map(s => [s.id, s]));
 const WEIGHTED = SYMBOLS.flatMap(s => Array(s.weight).fill(s.id));
-const pickWeighted = () => WEIGHTED[Math.floor(Math.random() * WEIGHTED.length)];
+const pickWeighted = () => slotPickSymbol(WEIGHTED);
 
 const ROWS = 3;
 const COLS = 5;
