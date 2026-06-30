@@ -3,6 +3,7 @@ import { G, CSS, gradient } from "../constants";
 import SubHeader from "../components/SubHeader";
 import BottomNav from "../components/BottomNav";
 import SupportChat from "../components/SupportChat";
+import { hasDepositHistory, isBonusClaimed, setBonusClaimed, getDeposits } from "../utils/activityStore";
 
 const AVATARS = ["🎮","🦊","🐉","🎯","🦁","🤖","👾","🎪","🦸","🧙","🐺","🦅","🐯","🦄","🎭","🎨"];
 
@@ -96,20 +97,74 @@ function NotificationScreen({ onBack }) {
   );
 }
 
-function GiftsScreen({ onBack }) {
-  const [claimed, setClaimed] = useState({});
+function GiftsScreen({ onBack, onGoPromo }) {
+  const [, forceTick] = useState(0);
+  const deposited = hasDepositHistory();
+  const totalDeposit = getDeposits().total;
+  const refData = JSON.parse(localStorage.getItem("spinova_referrals") || "{}");
+  const pendingRefs = refData.pending || 0;
+
+  const dailyClaimed = isBonusClaimed("daily");
+  const firstDepClaimed = isBonusClaimed("firstdep");
+
+  const claimDaily = () => {
+    if (!deposited || dailyClaimed) return;
+    setBonusClaimed("daily");
+    forceTick(t => t + 1);
+  };
+  const claimFirstDeposit = () => {
+    if (!deposited || firstDepClaimed) return;
+    setBonusClaimed("firstdep");
+    forceTick(t => t + 1);
+  };
+
+  const firstDepBonusAmt = Math.min(Math.round(totalDeposit * 0.10), 10);
+
   const gifts = [
-    {id:1,icon:"🎁",title:"Daily Login Bonus",desc:"Log in every day to earn rewards",amount:"৳50.00",expires:"Expires today",claimable:true},
-    {id:2,icon:"🏆",title:"First Deposit Bonus",desc:"100% bonus on your first deposit",amount:"Up to ৳10,000",expires:"Limited time",claimable:true},
-    {id:3,icon:"🎯",title:"Win Streak Bonus",desc:"Win 5 rounds in a row to unlock",amount:"৳200.00",expires:"Locked",claimable:false},
-    {id:4,icon:"👥",title:"Referral Reward",desc:"Invite a friend and both get rewarded",amount:"৳100.00",expires:"Ongoing",claimable:true},
+    {
+      id: 1, icon: "🎁", title: "Daily Login Bonus",
+      desc: deposited ? "Log in every day to earn rewards" : "Make a deposit to unlock daily bonus",
+      amount: "৳5.00",
+      expires: deposited ? "Expires today" : "Requires deposit",
+      claimable: deposited && !dailyClaimed,
+      claimed: dailyClaimed,
+      onClick: claimDaily,
+    },
+    {
+      id: 2, icon: "🏆", title: "First Deposit Bonus",
+      desc: "10% bonus on your first deposit (max ৳10)",
+      amount: deposited ? `৳${firstDepBonusAmt.toFixed(2)}` : "Up to ৳10",
+      expires: deposited ? "Limited time" : "Make a deposit to unlock",
+      claimable: deposited && !firstDepClaimed,
+      claimed: firstDepClaimed,
+      onClick: claimFirstDeposit,
+    },
+    {
+   
+      id: 4, icon: "👥", title: "Referral Reward",
+      desc: pendingRefs > 0
+        ? `${pendingRefs} friend${pendingRefs > 1 ? "s" : ""} pending deposit — earn ৳10 each`
+        : "Invite a friend — you both win once they deposit",
+      amount: "৳10.00",
+      expires: "Go to Promotions → Agency",
+      claimable: false,
+      claimed: false,
+      onClick: () => onGoPromo?.(),
+      buttonLabel: "View",
+    },
   ];
+
   return (
     <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif"}}>
       <SubHeader title="Gifts & Bonuses" onBack={onBack}/>
       <div style={{padding:"14px"}}>
+        {!deposited && (
+          <div style={{background:"#FFF3E0",borderRadius:14,padding:"12px 14px",marginBottom:14,fontSize:12,color:"#E65100",fontWeight:600}}>
+            💡 Make your first deposit to unlock Daily Login and First Deposit bonuses.
+          </div>
+        )}
         {gifts.map((g)=>(
-          <div key={g.id} style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:12,boxShadow:"0 2px 8px #0001",display:"flex",gap:14,alignItems:"center"}}>
+          <div key={g.id} style={{background:"#fff",borderRadius:16,padding:"16px",marginBottom:12,boxShadow:"0 2px 8px #0001",display:"flex",gap:14,alignItems:"center",opacity:(!g.claimable && !g.claimed && (g.id===1||g.id===2) && !deposited)?0.6:1}}>
             <div style={{width:52,height:52,borderRadius:16,background:g.claimable?"linear-gradient(135deg,#EF5350,#FF8A80)":"#f0f0f0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{g.icon}</div>
             <div style={{flex:1}}>
               <div style={{fontWeight:700,fontSize:14,color:G.text}}>{g.title}</div>
@@ -117,8 +172,8 @@ function GiftsScreen({ onBack }) {
               <div style={{fontSize:13,fontWeight:800,color:"#EF5350",marginTop:4}}>{g.amount}</div>
               <div style={{fontSize:10,color:"#bbb",marginTop:2}}>{g.expires}</div>
             </div>
-            <button onClick={()=>g.claimable&&setClaimed(c=>({...c,[g.id]:true}))} style={{padding:"8px 14px",borderRadius:20,border:"none",background:claimed[g.id]?"#e0e0e0":g.claimable?gradient:"#e0e0e0",color:claimed[g.id]?"#999":g.claimable?"#fff":"#999",fontWeight:700,fontSize:12,cursor:g.claimable&&!claimed[g.id]?"pointer":"default",fontFamily:"'Poppins',sans-serif",whiteSpace:"nowrap"}}>
-              {claimed[g.id]?"Claimed":g.claimable?"Claim":"Locked"}
+            <button onClick={g.onClick} style={{padding:"8px 14px",borderRadius:20,border:"none",background:g.claimed?"#e0e0e0":(g.claimable||g.buttonLabel)?gradient:"#e0e0e0",color:g.claimed?"#999":(g.claimable||g.buttonLabel)?"#fff":"#999",fontWeight:700,fontSize:12,cursor:(g.claimable||g.buttonLabel)?"pointer":"default",fontFamily:"'Poppins',sans-serif",whiteSpace:"nowrap"}}>
+              {g.claimed?"Claimed":g.buttonLabel?g.buttonLabel:g.claimable?"Claim":"Locked"}
             </button>
           </div>
         ))}
@@ -338,17 +393,213 @@ function VIPScreen({ onBack }) {
   );
 }
 
-export default function ProfileScreen({ user, balance, accounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome, myHistory, onLogout , onGoActivity, onGoPromo}) {
+function SecurityScreen({ onBack, user, accounts, setAccounts }) {
+  const [oldPass, setOldPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [passMsg, setPassMsg] = useState("");
+
+  const [newContact, setNewContact] = useState("");
+  const [contactPass, setContactPass] = useState("");
+  const [showContactPass, setShowContactPass] = useState(false);
+  const [showNewContact, setShowNewContact] = useState(false);
+  const [contactMsg, setContactMsg] = useState("");
+
+  const [newExtra, setNewExtra] = useState("");
+  const [extraPass, setExtraPass] = useState("");
+  const [showExtraPass, setShowExtraPass] = useState(false);
+  const [extraMsg, setExtraMsg] = useState("");
+
+  const isEmail = user?.contact?.includes("@");
+
+  const censorContact = (c) => {
+    if (!c) return "Not set";
+    if (c.includes("@")) {
+      const [local, domain] = c.split("@");
+      return local.slice(0, 2) + "•••" + local.slice(-1) + "@" + domain;
+    }
+    if (c.length >= 11) return c.slice(0, 3) + "•••••" + c.slice(-3);
+    return c;
+  };
+
+  const savePass = () => {
+    if (!oldPass || !newPass || !confirmPass) { setPassMsg("❌ Fill all fields."); return; }
+    if (newPass.length < 6) { setPassMsg("❌ Min 6 characters."); return; }
+    if (newPass !== confirmPass) { setPassMsg("❌ Passwords don't match."); return; }
+    setPassMsg("✅ Password updated!");
+    setTimeout(() => setPassMsg(""), 3000);
+    setOldPass(""); setNewPass(""); setConfirmPass("");
+  };
+
+  const saveContact = () => {
+    if (!newContact || !contactPass) { setContactMsg("❌ Fill all fields."); return; }
+    if (isEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact)) { setContactMsg("❌ Invalid email."); return; }
+    } else {
+      if (!/^(\+8801|01)[3-9]\d{8}$/.test(newContact.replace(/\s/g,""))) { setContactMsg("❌ Invalid BD number."); return; }
+    }
+    setContactMsg("✅ " + (isEmail ? "Email" : "Number") + " updated!");
+    setTimeout(() => setContactMsg(""), 3000);
+    setNewContact(""); setContactPass("");
+  };
+
+  const addExtraAccount = () => {
+    const clean = newExtra.replace(/\s/g, "");
+    if (!clean) { setExtraMsg("❌ Enter a number."); return; }
+    if (!extraPass) { setExtraMsg("❌ Enter your password to confirm."); return; }
+    if (!/^(\+8801|01)[3-9]\d{8}$/.test(clean)) { setExtraMsg("❌ Invalid BD number."); return; }
+    const existing = accounts?.extras || [];
+    if (existing.length >= 2) { setExtraMsg("❌ Max 2 extra numbers allowed."); return; }
+    if (clean === accounts?.main || existing.includes(clean)) { setExtraMsg("❌ Number already added."); return; }
+    setAccounts?.(a => ({ ...a, extras: [...(a?.extras || []), clean] }));
+    setExtraMsg("✅ Withdrawal number added!");
+    setTimeout(() => setExtraMsg(""), 3000);
+    setNewExtra(""); setExtraPass("");
+  };
+
+  const removeExtraAccount = (num) => {
+    setAccounts?.(a => ({ ...a, extras: (a?.extras || []).filter(e => e !== num) }));
+  };
+
+  const EyeBtn = ({ show, toggle }) => (
+    <button onClick={toggle} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", padding:0, fontSize:16, color:"#aaa" }}>
+      {show ? "🙈" : "👁️"}
+    </button>
+  );
+
+  const PwField = ({ label, val, set, show, toggle, ph="••••••••" }) => (
+    <div style={{ marginBottom:14 }}>
+      <div style={{ fontSize:12, color:G.sub, fontWeight:600, marginBottom:6 }}>{label}</div>
+      <div style={{ position:"relative" }}>
+        <input type={show ? "text" : "password"} value={val} onChange={e => set(e.target.value)}
+          placeholder={ph} maxLength={64}
+          style={{ width:"100%", padding:"13px 44px 13px 16px", borderRadius:12, border:"1.5px solid #eee", fontSize:14, fontFamily:"'Poppins',sans-serif", background:"#fafafa", color:G.text, boxSizing:"border-box" }} />
+        <EyeBtn show={show} toggle={toggle} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:480, margin:"0 auto", background:"#F4F4F8", minHeight:"100vh", fontFamily:"'Poppins',sans-serif", paddingBottom:40 }}>
+      <div style={{ background:gradient, padding:"0 0 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", padding:"14px 20px" }}>
+          <button onClick={onBack} style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer" }}>‹</button>
+          <span style={{ color:"#fff", fontWeight:700, fontSize:16, flex:1, textAlign:"center" }}>Security</span>
+          <div style={{ width:30 }} />
+        </div>
+      </div>
+
+      <div style={{ padding:"16px 14px", display:"flex", flexDirection:"column", gap:14 }}>
+
+        {/* Current contact (censored) */}
+        <div style={{ background:"#fff", borderRadius:16, padding:"18px", boxShadow:"0 2px 8px #0001" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:G.text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:20 }}>{isEmail ? "📧" : "📱"}</span>
+            {isEmail ? "Email Address" : "Mobile Number"}
+          </div>
+          <div style={{ background:"#F8F8FF", borderRadius:12, padding:"14px 16px", border:"1.5px solid #eee", marginBottom:16 }}>
+            <div style={{ fontSize:11, color:G.sub, fontWeight:600, marginBottom:4 }}>Current {isEmail ? "Email" : "Number"}</div>
+            <div style={{ fontWeight:700, fontSize:17, color:G.text, letterSpacing:2 }}>{censorContact(user?.contact)}</div>
+          </div>
+
+          <div style={{ fontSize:13, fontWeight:700, color:G.text, marginBottom:12 }}>Change {isEmail ? "Email" : "Number"}</div>
+
+          {/* New contact field with eye toggle */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, color:G.sub, fontWeight:600, marginBottom:6 }}>New {isEmail ? "Email" : "Mobile Number"}</div>
+            <div style={{ position:"relative" }}>
+              <input
+                type={showNewContact ? "text" : "password"}
+                value={newContact} onChange={e => setNewContact(e.target.value)}
+                placeholder={isEmail ? "new@email.com" : "+880 XXXXXXXXXX"}
+                maxLength={isEmail ? 100 : 15}
+                style={{ width:"100%", padding:"13px 44px 13px 16px", borderRadius:12, border:"1.5px solid #eee", fontSize:14, fontFamily:"'Poppins',sans-serif", background:"#fafafa", color:G.text, boxSizing:"border-box" }}
+              />
+              <EyeBtn show={showNewContact} toggle={() => setShowNewContact(v => !v)} />
+            </div>
+          </div>
+
+          <PwField label="Confirm with Password" val={contactPass} set={setContactPass} show={showContactPass} toggle={() => setShowContactPass(v => !v)} />
+          {contactMsg && <div style={{ fontSize:12, fontWeight:600, color: contactMsg.startsWith("✅") ? "#22C55E" : "#EF5350", marginBottom:10 }}>{contactMsg}</div>}
+          <button onClick={saveContact} style={{ width:"100%", padding:"13px", borderRadius:12, border:"none", background:gradient, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'Poppins',sans-serif" }}>
+            Update {isEmail ? "Email" : "Number"}
+          </button>
+        </div>
+
+        {/* Withdrawal Accounts */}
+        <div style={{ background:"#fff", borderRadius:16, padding:"18px", boxShadow:"0 2px 8px #0001" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:G.text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:20 }}>💳</span> Withdrawal Accounts
+          </div>
+
+          <div style={{ background:"#FFF8E1", borderRadius:12, padding:"12px 14px", marginBottom:10, border:"1px solid #FFE082" }}>
+            <div style={{ fontSize:11, color:"#E65100", fontWeight:600, marginBottom:4 }}>Main Account (registered number)</div>
+            <div style={{ fontWeight:700, fontSize:15, color:G.text }}>{censorContact(accounts?.main || user?.contact)}</div>
+          </div>
+
+          {(accounts?.extras || []).map((e, i) => (
+            <div key={i} style={{ background:"#f5f5f5", borderRadius:10, padding:"10px 12px", marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:11, color:G.sub, marginBottom:2 }}>Withdrawal #{i+2}</div>
+                <div style={{ fontWeight:600, color:G.text }}>{censorContact(e)}</div>
+              </div>
+              <button onClick={() => removeExtraAccount(e)} style={{ background:"none", border:"none", color:"#EF5350", fontSize:13, fontWeight:700, cursor:"pointer" }}>Remove</button>
+            </div>
+          ))}
+
+          {(accounts?.extras || []).length < 2 && (
+            <>
+              <div style={{ fontSize:13, fontWeight:700, color:G.text, margin:"14px 0 10px" }}>Add Withdrawal Number</div>
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:12, color:G.sub, fontWeight:600, marginBottom:6 }}>New Number</div>
+                <input
+                  type="text" value={newExtra} onChange={e => setNewExtra(e.target.value)}
+                  placeholder="+880 XXXXXXXXXX" maxLength={15}
+                  style={{ width:"100%", padding:"13px 16px", borderRadius:12, border:"1.5px solid #eee", fontSize:14, fontFamily:"'Poppins',sans-serif", background:"#fafafa", color:G.text, boxSizing:"border-box" }}
+                />
+              </div>
+              <PwField label="Confirm with Password" val={extraPass} set={setExtraPass} show={showExtraPass} toggle={() => setShowExtraPass(v => !v)} />
+              {extraMsg && <div style={{ fontSize:12, fontWeight:600, color: extraMsg.startsWith("✅") ? "#22C55E" : "#EF5350", marginBottom:10 }}>{extraMsg}</div>}
+              <button onClick={addExtraAccount} style={{ width:"100%", padding:"13px", borderRadius:12, border:"none", background:gradient, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'Poppins',sans-serif" }}>
+                Add Number
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Change Password */}
+        <div style={{ background:"#fff", borderRadius:16, padding:"18px", boxShadow:"0 2px 8px #0001" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:G.text, marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:20 }}>🔐</span> Change Password
+          </div>
+          <PwField label="Current Password" val={oldPass} set={setOldPass} show={showOld} toggle={() => setShowOld(v => !v)} />
+          <PwField label="New Password" val={newPass} set={setNewPass} show={showNew} toggle={() => setShowNew(v => !v)} />
+          <PwField label="Confirm New Password" val={confirmPass} set={setConfirmPass} show={showConfirm} toggle={() => setShowConfirm(v => !v)} />
+          {passMsg && <div style={{ fontSize:12, fontWeight:600, color: passMsg.startsWith("✅") ? "#22C55E" : "#EF5350", marginBottom:10 }}>{passMsg}</div>}
+          <button onClick={savePass} style={{ width:"100%", padding:"13px", borderRadius:12, border:"none", background:gradient, color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"'Poppins',sans-serif" }}>
+            Update Password
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function ProfileScreen({ user, balance, accounts, setAccounts, onBack, onGoSettings, activeNav, setActiveNav, onGoWallet, onGoHome, myHistory, onLogout , onGoActivity, onGoPromo, initialSubScreen}) {
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [subScreen, setSubScreen] = useState(null);
-  const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
+  const [subScreen, setSubScreen] = useState(initialSubScreen || null);
+  const username = user?.name || (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
   const uidNum = useRef(Math.floor(100000 + Math.random() * 900000)).current;
 
   if (subScreen === "gamehistory") return <GameHistoryScreen onBack={()=>setSubScreen(null)} myHistory={myHistory||[]} />;
   if (subScreen === "transaction") return <TransactionScreen onBack={()=>setSubScreen(null)} balance={balance} />;
   if (subScreen === "notification") return <NotificationScreen onBack={()=>setSubScreen(null)} />;
-  if (subScreen === "gifts") return <GiftsScreen onBack={()=>setSubScreen(null)} />;
+  if (subScreen === "gifts") return <GiftsScreen onBack={()=>setSubScreen(null)} onGoPromo={onGoPromo} />;
   if (subScreen === "stats") return <GameStatsScreen onBack={()=>setSubScreen(null)} />;
   if (subScreen === "language") return <LanguageScreen onBack={()=>setSubScreen(null)} />;
   if (subScreen === "feedback") return <FeedbackScreen onBack={()=>setSubScreen(null)} />;
@@ -357,6 +608,7 @@ export default function ProfileScreen({ user, balance, accounts, onBack, onGoSet
   if (subScreen === "about") return <AboutUsScreen onBack={()=>setSubScreen(null)} />;
   if (subScreen === "vip") return <VIPScreen onBack={()=>setSubScreen(null)} />;
   if (subScreen === "customerservice") return <SupportChat onClose={()=>setSubScreen(null)} user={user} />;
+  if (subScreen === "security") return <SecurityScreen onBack={()=>setSubScreen(null)} user={user} accounts={accounts} setAccounts={setAccounts} />;
 
   const menuRow = (icon, label, right, onClick) => (
     <div key={label} onClick={onClick} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid #f5f5f5",cursor:"pointer",background:"#fff"}}>
@@ -452,11 +704,11 @@ export default function ProfileScreen({ user, balance, accounts, onBack, onGoSet
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"16px 10px",gap:16}}>
             {[
               {icon:"⚙️",label:"Settings",onClick:onGoSettings},
+              {icon:"🔒",label:"Security",onClick:()=>setSubScreen("security")},
               {icon:"💬",label:"Feedback",onClick:()=>setSubScreen("feedback")},
               {icon:"📢",label:"Announcement",onClick:()=>setSubScreen("announcement")},
               {icon:"🎧",label:"Customer Service",onClick:()=>setSubScreen("customerservice")},
               {icon:"📖",label:"Beginner's Guide",onClick:()=>setSubScreen("guide")},
-              {icon:"ℹ️",label:"About us",onClick:()=>setSubScreen("about")},
             ].map((item,i)=>(
               <div key={i} onClick={item.onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
                 <div style={{width:48,height:48,borderRadius:"50%",background:"#FFF0F0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{item.icon}</div>
@@ -464,20 +716,6 @@ export default function ProfileScreen({ user, balance, accounts, onBack, onGoSet
               </div>
             ))}
           </div>
-        </div>
-
-        <div style={{background:"#fff",borderRadius:14,padding:"16px",boxShadow:"0 2px 8px #0001",marginBottom:10}}>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>💳 Payment Accounts</div>
-          <div style={{background:"#FFF8E1",borderRadius:10,padding:"12px",marginBottom:8,border:"1px solid #FFE082"}}>
-            <div style={{fontSize:11,color:"#E65100",fontWeight:600,marginBottom:4}}>Main Account (permanent)</div>
-            <div style={{fontWeight:700,fontSize:15,color:G.text}}>{accounts?.main||"Not configured"}</div>
-          </div>
-          {accounts?.extras?.filter(Boolean).map((e,i)=>(
-            <div key={i} style={{background:"#f5f5f5",borderRadius:10,padding:"10px 12px",marginBottom:6}}>
-              <div style={{fontSize:11,color:G.sub,marginBottom:2}}>Withdrawal #{i+2}</div>
-              <div style={{fontWeight:600,color:G.text}}>{e}</div>
-            </div>
-          ))}
         </div>
 
         <button onClick={onLogout} style={{width:"100%",padding:"14px 0",borderRadius:12,border:"1.5px solid #EF5350",background:"#fff",color:"#EF5350",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:8}}>

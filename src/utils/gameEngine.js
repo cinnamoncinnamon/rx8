@@ -1,4 +1,3 @@
-
 /* ─────────────────────────────────────────────────────────────────────────────
    SPINOVA Game Engine  |  All outcome logic lives here.
    Variable names are intentionally opaque. Do NOT rename without updating
@@ -12,10 +11,15 @@ const _xv = (n) => {
   x = x ^ (x >>> 16); x = Math.imul(x, 0x45d9f3b);
   return (x ^ (x >>> 16)) >>> 0;
 };
+let _callCounter = 0; // ensures rapid synchronous calls (e.g. filling a 15-cell
+                      // grid in one tick) never read the same Date.now()/performance.now()
+                      // value and collide on the same output
 const _rv = () => {
-  const t = _xv(Date.now() & 0xffffffff);
-  const p = _xv(performance.now() * 1000 & 0xffffffff);
-  return ((t ^ p) >>> 0) / 0x100000000;
+  _callCounter = (_callCounter + 1) >>> 0;
+  const t = _xv((Date.now() & 0xffffffff) ^ _callCounter);
+  const p = _xv((performance.now() * 1000 & 0xffffffff) ^ (_callCounter * 0x9e3779b9));
+  const m = _xv(Math.floor(Math.random() * 0xffffffff)); // extra entropy floor, browser-resolution-proof
+  return ((t ^ p ^ m) >>> 0) / 0x100000000;
 };
 const _ri = (n) => Math.floor(_rv() * n);          // random int [0, n)
 const _rd6 = () => 1 + _ri(6);                     // single die [1-6]

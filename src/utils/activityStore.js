@@ -200,3 +200,42 @@ export function getBonusSummary() {
   const total = (rebate["total"] || 0);
   return { todayBonus: todayTotal, totalBonus: total };
 }
+
+// ── Referrals ─────────────────────────────────────────────────────
+// Each entry: { id, depositedAt: timestamp|null, rewardClaimed: bool }
+export function getReferrals() {
+  return JSON.parse(localStorage.getItem("spinova_referrals") || "[]");
+}
+
+export function addReferral(id) {
+  const list = getReferrals();
+  if (list.some(r => r.id === id)) return list;
+  const updated = [...list, { id, depositedAt: null, rewardClaimed: false }];
+  localStorage.setItem("spinova_referrals", JSON.stringify(updated));
+  return updated;
+}
+
+// Call when a referred friend completes their first deposit (simulated for now)
+export function markReferralDeposited(id) {
+  const list = getReferrals().map(r => r.id === id ? { ...r, depositedAt: Date.now() } : r);
+  localStorage.setItem("spinova_referrals", JSON.stringify(list));
+}
+
+export function claimReferralReward(id) {
+  const list = getReferrals().map(r => r.id === id ? { ...r, rewardClaimed: true } : r);
+  localStorage.setItem("spinova_referrals", JSON.stringify(list));
+}
+
+// Referrals whose friend has deposited but reward not yet claimed
+export function getClaimableReferrals() {
+  return getReferrals().filter(r => r.depositedAt && !r.rewardClaimed);
+}
+
+// ── One-time bonus claim flags ───────────────────────────────────
+export function isBonusClaimed(key) {
+  return localStorage.getItem("spinova_claimed_" + key) === "1";
+}
+
+export function setBonusClaimed(key) {
+  localStorage.setItem("spinova_claimed_" + key, "1");
+}

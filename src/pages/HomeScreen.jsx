@@ -4,6 +4,8 @@ import BottomNav from "../components/BottomNav";
 import popularImg from "../assets/popular.png";
 import lotteryImg from "../assets/lottery.png";
 import slotsImg from "../assets/slots.png";
+import viewIcon from "../assets/view.png";
+import hideIcon from "../assets/hide.png";
 import sportsImg from "../assets/sports.png";
 import casinoImg from "../assets/casino.png";
 import fishingImg from "../assets/fishing.png";
@@ -20,7 +22,7 @@ const CATEGORIES = [
 const POPULAR_GAMES = [
   { id:"wingo",    name:"Win Go",     desc:"Guess Number · Green/Red/Violet",   emoji:"🔮", bg:"linear-gradient(135deg,#EF5350,#FF8A80)", tag:"HOT" },
   { id:"aviator",  name:"Aviator",    desc:"Cash out before it flies away!",     emoji:"✈️", bg:"linear-gradient(135deg,#0F0F2A,#3949AB)", tag:"POPULAR" },
-  { id:"motoride", name:"Moto Crash", desc:"Race & cash out before crash!",      emoji:"🏍️", bg:"linear-gradient(135deg,#F97316,#EA580C)", tag:"NEW" },
+  { id:"motoride", name:"Moto Ride", desc:"Race & cash out before crash!",      emoji:"🏍️", bg:"linear-gradient(135deg,#F97316,#EA580C)", tag:"NEW" },
   { id:"roadrush", name:"Road Rush",  desc:"Drive & cash out before you crash!", emoji:"🚗", bg:"linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)", tag:"NEW" },
   { id:"trading",  name:"FX Trader",  desc:"Trade USD/JPY · EUR/USD · XAU/USD", emoji:"📈", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)" },
 ];
@@ -33,12 +35,9 @@ const LOTTERY_GAMES = [
   { id:"trx",      name:"Trx Win",   desc:"Guess Number · Green/Red/Violet",   emoji:"💎", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", soon:true },
 ];
 const SLOT_GAMES = [
-  { id:"slots1", name:"Lucky 777", desc:"Classic fruit slots · 3 reels", emoji:"🎰", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", tag:"HOT" },
-  { id:"slots2", name:"Gold Rush", desc:"Mine for gold · Big multipliers", emoji:"⛏️", bg:"linear-gradient(135deg,#F59E0B,#D97706)", tag:"NEW" },
-  { id:"slots3", name:"Dragon Spin", desc:"Dragon wilds · Free spins", emoji:"🐉", bg:"linear-gradient(135deg,#DC2626,#991B1B)" },
+  
   { id:"slots6", name:"Tomb Raiders", desc:"Ancient relics · Wild Idol · Free spins", emoji:"🏺", bg:"linear-gradient(135deg,#92400E,#B45309)", tag:"NEW" },
-  { id:"slots4", name:"Ocean Deep", desc:"Underwater treasure hunt", emoji:"🌊", bg:"linear-gradient(135deg,#0891B2,#0E7490)" },
-  { id:"slots5", name:"Star Burst", desc:"Galactic wins · Expanding wilds", emoji:"⭐", bg:"linear-gradient(135deg,#4F46E5,#7C3AED)" },
+  
   { id:"slots8", name:"Golden Relics", desc:"Underwater treasure · Mega jackpot", emoji:"🔱", bg:"linear-gradient(135deg,#062347,#04162f)", tag:"NEW" },
   { id:"slots7", name:"Elemental Fury", desc:"5x5 ways · Elements clash", emoji:"⚡", bg:"linear-gradient(135deg,#1a3a8a,#2a1a6a)", tag:"NEW" },
   
@@ -92,7 +91,9 @@ function SlotGrid({ games, onSelectGame }) {
 export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, onGoWallet, onGoActivity, onGoPromo }) {
   const [activeNav, setActiveNav] = useState("home");
   const [activeCat, setActiveCat] = useState("popular");
-  const username = (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Player";
+  const [balanceHidden, setBalanceHidden] = useState(false);
+  const username = user?.name || (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Player";
+  const displayBalance = balanceHidden ? "••••••" : `৳${balance.toFixed(2)}`;
 
   return (
     <div style={{ maxWidth:480, margin:"0 auto", background:"#F4F4F8", minHeight:"100vh", fontFamily:"'Poppins',sans-serif", paddingBottom:80 }}>
@@ -105,7 +106,7 @@ export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, o
             SPIN<span style={{ color:"#FFE082" }}>OVA</span>
           </div>
           <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            <div style={{ background:"rgba(255,255,255,.2)", borderRadius:20, padding:"5px 12px", color:"#fff", fontWeight:700, fontSize:13 }}>৳{balance.toFixed(2)}</div>
+            <div style={{ background:"rgba(255,255,255,.2)", borderRadius:20, padding:"5px 12px", color:"#fff", fontWeight:700, fontSize:13 }}>{displayBalance}</div>
             <div onClick={onGoProfile} style={{ width:36, height:36, borderRadius:"50%", background:"rgba(255,255,255,.25)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:16, color:"#fff", fontWeight:800 }}>
               {username[0]?.toUpperCase() || "🎮"}
             </div>
@@ -114,8 +115,13 @@ export default function HomeScreen({ user, balance, onSelectGame, onGoProfile, o
 
         {/* Balance Card */}
         <div style={{ background:"rgba(255,255,255,.15)", borderRadius:16, padding:"16px", backdropFilter:"blur(10px)" }}>
-          <div style={{ color:"rgba(255,255,255,.7)", fontSize:12, marginBottom:2 }}>Total Balance</div>
-          <div style={{ color:"#fff", fontSize:32, fontWeight:900, marginBottom:12 }}>৳{balance.toFixed(2)}</div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:2 }}>
+            <div style={{ color:"rgba(255,255,255,.7)", fontSize:12 }}>Total Balance</div>
+            <button onClick={() => setBalanceHidden(v => !v)} style={{ background:"none", border:"none", cursor:"pointer", padding:0, lineHeight:1, display:"flex", alignItems:"center" }}>
+              <img src={balanceHidden ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.6, filter: "invert(1)" }} />
+            </button>
+          </div>
+          <div style={{ color:"#fff", fontSize:32, fontWeight:900, marginBottom:12, letterSpacing: balanceHidden ? 2 : 0 }}>{displayBalance}</div>
           <div style={{ display:"flex", gap:10 }}>
             <button onClick={onGoWallet} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"none", background:"rgba(255,255,255,.25)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'Poppins',sans-serif" }}>+ Deposit</button>
             <button onClick={onGoWallet} style={{ flex:1, padding:"10px 0", borderRadius:10, border:"1.5px solid rgba(255,255,255,.5)", background:"transparent", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"'Poppins',sans-serif" }}>↓ Withdraw</button>

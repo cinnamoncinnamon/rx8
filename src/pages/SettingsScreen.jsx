@@ -1,45 +1,95 @@
-import React, { useState } from "react";
+import React from "react";
 import { G, CSS, gradient } from "../constants";
 
-export default function SettingsScreen({ user, onBack }) {
-  const [loginOld, setLoginOld] = useState(""); const [loginNew, setLoginNew] = useState(""); const [loginConfirm, setLoginConfirm] = useState("");
-  const [withOld, setWithOld] = useState(""); const [withNew, setWithNew] = useState(""); const [withConfirm, setWithConfirm] = useState("");
-  const [loginMsg, setLoginMsg] = useState(""); const [withMsg, setWithMsg] = useState("");
-  const saveLogin = () => { if (!loginOld||!loginNew||!loginConfirm){setLoginMsg("Fill all fields.");return;} if(loginNew!==loginConfirm){setLoginMsg("Passwords don't match.");return;} setLoginMsg("✅ Login password updated!"); setTimeout(()=>setLoginMsg(""),3000); setLoginOld("");setLoginNew("");setLoginConfirm(""); };
-  const saveWith  = () => { if (!withOld||!withNew||!withConfirm){setWithMsg("Fill all fields.");return;} if(withNew!==withConfirm){setWithMsg("Passwords don't match.");return;} setWithMsg("✅ Withdrawal password updated!"); setTimeout(()=>setWithMsg(""),3000); setWithOld("");setWithNew("");setWithConfirm(""); };
-  const Field = ({label,val,set,ph}) => (
-    <div style={{marginBottom:12}}>
-      <div style={{fontSize:12,color:G.sub,fontWeight:600,marginBottom:5}}>{label}</div>
-      <input type="password" value={val} onChange={e=>set(e.target.value)} placeholder={ph} style={{width:"100%",padding:"12px 14px",borderRadius:11,border:"1.5px solid #eee",fontSize:14,fontFamily:"'Poppins',sans-serif",background:"#fafafa",color:G.text,outline:"none"}} />
+function censorContact(c) {
+  if (!c) return "Not set";
+  if (c.includes("@")) {
+    const [local, domain] = c.split("@");
+    return local.slice(0, 2) + "•••" + local.slice(-1) + "@" + domain;
+  }
+  if (c.length >= 11) return c.slice(0, 3) + "•••••" + c.slice(-3);
+  return c;
+}
+
+function Row({ icon, label, value, onClick, last }) {
+  return (
+    <div onClick={onClick} style={{
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+      padding:"16px", cursor: onClick ? "pointer" : "default",
+      borderBottom: last ? "none" : "1px solid #f2f2f5",
+    }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        {icon && (
+          <div style={{ width:36, height:36, borderRadius:10, background:"#FFF0F0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>
+            {icon}
+          </div>
+        )}
+        <span style={{ fontSize:14, color: icon ? G.text : G.sub, fontWeight: icon ? 600 : 500 }}>{label}</span>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+        {value && <span style={{ fontSize:13, color:G.sub }}>{value}</span>}
+        {onClick && <span style={{ color:"#ccc", fontSize:18 }}>›</span>}
+      </div>
     </div>
   );
+}
+
+export default function SettingsScreen({ user, onBack, onGoSecurity }) {
+  const username = user?.name || (user?.contact?.includes("@") ? user.contact.split("@")[0] : user?.contact) || "Member";
+  const isEmail = user?.contact?.includes("@");
+  const uid = user?.uid || "100000";
+
+  const copyUid = () => {
+    navigator.clipboard?.writeText(uid);
+  };
+
   return (
-    <div style={{maxWidth:480,margin:"0 auto",background:"#F4F4F8",minHeight:"100vh",fontFamily:"'Poppins',sans-serif",paddingBottom:80}}>
+    <div style={{ maxWidth:480, margin:"0 auto", background:"#F4F4F8", minHeight:"100vh", fontFamily:"'Poppins',sans-serif", paddingBottom:40 }}>
       <style>{CSS}</style>
-      <div style={{background:gradient,padding:"0 0 20px"}}>
-        <div style={{display:"flex",alignItems:"center",padding:"14px 20px"}}>
-          <button onClick={onBack} style={{background:"none",border:"none",color:"#fff",fontSize:22,cursor:"pointer"}}>‹</button>
-          <span style={{color:"#fff",fontWeight:700,fontSize:16,flex:1,textAlign:"center"}}>Settings Center</span>
-          <div style={{width:30}}/>
+      <div style={{ background:gradient, padding:"0 0 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", padding:"14px 20px" }}>
+          <button onClick={onBack} style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer" }}>‹</button>
+          <span style={{ color:"#fff", fontWeight:700, fontSize:16, flex:1, textAlign:"center" }}>Settings Center</span>
+          <div style={{ width:30 }} />
         </div>
       </div>
-      <div style={{padding:"16px 14px",display:"flex",flexDirection:"column",gap:14}}>
-        <div style={{background:"#fff",borderRadius:16,padding:"18px",boxShadow:"0 2px 8px #0001"}}>
-          <div style={{fontWeight:800,fontSize:15,color:G.text,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>🔐</span> Login Password</div>
-          <Field label="Current Password" val={loginOld} set={setLoginOld} ph="Enter current password" />
-          <Field label="New Password" val={loginNew} set={setLoginNew} ph="Enter new password" />
-          <Field label="Confirm New Password" val={loginConfirm} set={setLoginConfirm} ph="Confirm new password" />
-          {loginMsg && <div style={{fontSize:12,color:loginMsg.startsWith("✅")?"#22C55E":"#EF5350",marginBottom:8,fontWeight:600}}>{loginMsg}</div>}
-          <button onClick={saveLogin} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Update Login Password</button>
+
+      <div style={{ padding:"16px 14px", display:"flex", flexDirection:"column", gap:14 }}>
+
+        {/* Profile block */}
+        <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 2px 8px #0001", overflow:"hidden" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px", borderBottom:"1px solid #f2f2f5" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:44, height:44, borderRadius:"50%", background:gradient, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:"#fff" }}>
+                {username[0]?.toUpperCase() || "🎮"}
+              </div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6, color:G.sub, fontSize:13 }}>
+              Change avatar <span style={{ color:"#ccc", fontSize:18 }}>›</span>
+            </div>
+          </div>
+          <Row label="Nickname" value={username} onClick={() => {}} />
+          <Row label="UID" value={
+            <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+              {uid}
+              <span onClick={(e) => { e.stopPropagation(); copyUid(); }} style={{ cursor:"pointer", fontSize:12, color:"#EF5350" }}>⧉</span>
+            </span>
+          } last />
         </div>
-        <div style={{background:"#fff",borderRadius:16,padding:"18px",boxShadow:"0 2px 8px #0001"}}>
-          <div style={{fontWeight:800,fontSize:15,color:G.text,marginBottom:14,display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>💳</span> Withdrawal Password</div>
-          <Field label="Current Password" val={withOld} set={setWithOld} ph="Enter current password" />
-          <Field label="New Password" val={withNew} set={setWithNew} ph="Enter new password" />
-          <Field label="Confirm New Password" val={withConfirm} set={setWithConfirm} ph="Confirm new password" />
-          {withMsg && <div style={{fontSize:12,color:withMsg.startsWith("✅")?"#22C55E":"#EF5350",marginBottom:8,fontWeight:600}}>{withMsg}</div>}
-          <button onClick={saveWith} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:gradient,color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Update Withdrawal Password</button>
+
+        {/* Security information */}
+        <div>
+          <div style={{ fontWeight:800, fontSize:14, color:G.text, margin:"4px 0 10px", display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ width:4, height:16, background:"#EF5350", borderRadius:2, display:"inline-block" }} />
+            Security information
+          </div>
+          <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 2px 8px #0001", overflow:"hidden" }}>
+            <Row icon="🔒" label="Login password" value="Edit" onClick={onGoSecurity} />
+            <Row icon="✉️" label={isEmail ? "Mail" : "Mobile"} value={censorContact(user?.contact)} onClick={onGoSecurity} />
+            <Row icon="ℹ️" label="Updated version" value="1.0.9" last />
+          </div>
         </div>
+
       </div>
     </div>
   );

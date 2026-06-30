@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
 import SubHeader from "../components/SubHeader";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit } from "../utils/rateLimiter";
+import { recordDeposit } from "../utils/activityStore";
 
 // ── Donut chart ──────────────────────────────────────────────────────────────
 function Donut({ pct, color, size = 90 }) {
@@ -47,6 +48,7 @@ function DepositScreen({ balance, setBalance, onBack }) {
     if (!check.allowed) { setDone(check.message); setTimeout(() => setDone(""), 5000); return; }
     clearRateLimit("deposit");
     setBalance(b => b + a);
+    recordDeposit(a);
     setDone(`✅ Deposited ৳${a.toFixed(2)} successfully!`);
     setAmount("");
     setTimeout(() => setDone(""), 3000);

@@ -90,25 +90,25 @@ function ReferralScreen({ onBack, user, balance, setBalance }) {
   function simulateReferral() {
     const data = JSON.parse(localStorage.getItem("spinova_referrals") || "{}");
     data.referred = (data.referred || 0) + 1;
-    data.earned = (data.earned || 0) + 20;
+    data.pending = (data.pending || 0) + 1; // friend signed up but hasn't deposited yet
     data.history = data.history || [];
-    data.history.unshift({ type: "signup", amount: 20, date: new Date().toLocaleDateString(), note: "Friend signed up" });
+    data.history.unshift({ type: "signup", amount: 0, date: new Date().toLocaleDateString(), note: "Friend signed up (no reward yet)" });
     localStorage.setItem("spinova_referrals", JSON.stringify(data));
-    setBalance(b => b + 20);
     setStats(getReferralStats());
-    showToast("+৳20 referral bonus! 🎉");
+    showToast("Friend signed up! Reward unlocks after their first deposit.");
   }
 
   function simulateDeposit() {
     const data = JSON.parse(localStorage.getItem("spinova_referrals") || "{}");
-    if ((data.referred || 0) === 0) { showToast("No referred friends yet!", "error"); return; }
+    if ((data.pending || 0) === 0) { showToast("No friends awaiting deposit!", "error"); return; }
+    data.pending -= 1;
     data.earned = (data.earned || 0) + 10;
     data.history = data.history || [];
-    data.history.unshift({ type: "deposit", amount: 10, date: new Date().toLocaleDateString(), note: "Friend made a deposit" });
+    data.history.unshift({ type: "deposit", amount: 10, date: new Date().toLocaleDateString(), note: "Friend made their first deposit" });
     localStorage.setItem("spinova_referrals", JSON.stringify(data));
     setBalance(b => b + 10);
     setStats(getReferralStats());
-    showToast("+৳10 deposit commission! 💰");
+    showToast("+৳10 referral bonus! 🎉");
   }
 
   return (
@@ -152,7 +152,7 @@ function ReferralScreen({ onBack, user, balance, setBalance }) {
         {[
           { icon: "📊", label: "Subordinate data", desc: `${stats.referred} friends referred` },
           { icon: "💵", label: "Commission detail", desc: `Total ৳${stats.earned} earned` },
-          { icon: "📋", label: "Invitation rules", desc: "৳20 signup · ৳10 per deposit" },
+          { icon: "📋", label: "Invitation rules", desc: "৳10 reward once your friend deposits" },
           { icon: "🎯", label: "Promotion data", desc: "View your stats" },
         ].map((item, i, arr) => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: i < arr.length - 1 ? "1px solid #f5f5f5" : "none" }}>
@@ -199,8 +199,8 @@ function ReferralScreen({ onBack, user, balance, setBalance }) {
       <div style={{ margin: "14px 14px 0", background: "#fff3e0", borderRadius: 16, padding: 16 }}>
         <div style={{ fontSize: 11, color: "#888", marginBottom: 10, fontWeight: 700 }}>🧪 Test buttons (remove before launch)</div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={simulateReferral} style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "none", background: "#FF8C00", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>Simulate Signup (+৳20)</button>
-          <button onClick={simulateDeposit} style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "none", background: "#4CAF50", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>Simulate Deposit (+৳10)</button>
+          <button onClick={simulateReferral} style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "none", background: "#FF8C00", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>Simulate Signup (no reward)</button>
+          <button onClick={simulateDeposit} style={{ flex: 1, padding: "10px 0", borderRadius: 12, border: "none", background: "#4CAF50", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>Simulate Friend's Deposit (+৳10)</button>
         </div>
       </div>
     </div>
