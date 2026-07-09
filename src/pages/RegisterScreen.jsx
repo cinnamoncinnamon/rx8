@@ -1,52 +1,50 @@
 import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
-import { checkRateLimit, recordFailedAttempt, clearRateLimit, remainingAttempts } from "../utils/rateLimiter";
-import { validateRegisterInput } from "../utils/sanitize";
 import SlideVerify from "../components/SlideVerify";
 import viewIcon from "../assets/view.png";
 import hideIcon from "../assets/hide.png";
+import { apiRegister } from "../api";
 
 export default function RegisterScreen({ onRegister, onBack }) {
-  const [method, setMethod] = useState("mobile");
   const [name, setName] = useState("");
-  const [input, setInput] = useState("");
+  const [mobile, setMobile] = useState("");
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [verified, setVerified] = useState(false);
   const [slideReset, setSlideReset] = useState(0);
-  const [showInput, setShowInput] = useState(false);
+  const [showMobile, setShowMobile] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const submit = () => {
-    const check = checkRateLimit("register");
-    if (!check.allowed) { setErr(check.message); return; }
-
+  const submit = async () => {
     if (!verified) { setErr("Please complete the verification slider."); return; }
-
-    if (!name.trim()) { setErr("Please enter your name."); return; }
-    if (name.trim().length < 2) { setErr("Name must be at least 2 characters."); return; }
-
-    const validation = validateRegisterInput(method, input, pass, confirm);
-    if (!validation.ok) {
-      setErr(validation.message);
-      setVerified(false);
-      setSlideReset(r => r + 1);
-      return;
-    }
+    if (!name.trim() || name.trim().length < 2) { setErr("Enter your full name."); return; }
+    if (!mobile) { setErr("Enter your mobile number."); return; }
+    if (!pass || pass.length < 6) { setErr("Password must be at least 6 characters."); return; }
+    if (pass !== confirm) { setErr("Passwords don't match."); return; }
 
     setLoading(true);
-    setTimeout(() => {
-      clearRateLimit("register");
-      const uid = String(100000 + Math.floor(Math.random() * 900000));
-      onRegister({ contact: validation.contact, method, name: name.trim(), uid });
-    }, 1200);
+    setErr("");
+    try {
+      const user = await apiRegister({
+        mobile: mobile.trim(),
+        password: pass,
+        confirmPassword: confirm,
+        name: name.trim(),
+      });
+      onRegister(user);
+    } catch (e) {
+      setErr(e.message || "Registration failed. Please try again.");
+      setVerified(false);
+      setSlideReset(r => r + 1);
+    }
+    setLoading(false);
   };
 
-  const rem = remainingAttempts("register");
-  const locked = !checkRateLimit("register").allowed;
+  const fieldStyle = { width: "100%", padding: "13px 44px 13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E", boxSizing: "border-box" };
+  const labelStyle = { fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 };
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#EF5350 0%,#FF8A80 42%,#fff 72%)", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Poppins',sans-serif" }}>
@@ -61,56 +59,30 @@ export default function RegisterScreen({ onRegister, onBack }) {
         <div style={{ fontWeight: 800, fontSize: 22, color: G.text, marginBottom: 4 }}>Join SPINOVA 🎮</div>
         <div style={{ color: G.sub, fontSize: 13, marginBottom: 20 }}>Start winning today</div>
 
-        {/* Method toggle */}
-        <div style={{ display: "flex", background: "#f5f5f5", borderRadius: 12, marginBottom: 20, padding: 4, gap: 4 }}>
-          {["mobile", "gmail"].map((m) => (
-            <button key={m} onClick={() => { setMethod(m); setInput(""); setErr(""); }}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 9, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13, background: method === m ? "#EF5350" : "transparent", color: method === m ? "#fff" : "#888", transition: "all .2s" }}>
-              {m === "mobile" ? "📱 Mobile" : "📧 Gmail"}
-            </button>
-          ))}
-        </div>
-
-        {/* Fields */}
         {/* Full Name */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>Full Name</div>
-          <input
-            type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Your name" maxLength={40}
-            style={{ width: "100%", padding: "13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E", boxSizing: "border-box" }}
-          />
+          <div style={labelStyle}>Full Name</div>
+          <div style={{ position: "relative" }}>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" maxLength={40} style={{ ...fieldStyle, padding: "13px 16px" }} />
+          </div>
         </div>
 
-        {/* Mobile / Gmail */}
+        {/* Mobile */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>{method === "mobile" ? "Mobile Number" : "Gmail"}</div>
+          <div style={labelStyle}>📱 Mobile Number</div>
           <div style={{ position: "relative" }}>
-            <input
-              type={method === "mobile" && !showInput ? "password" : "text"}
-              value={input} onChange={(e) => setInput(e.target.value)}
-              placeholder={method === "mobile" ? "+880 XXXXXXXXXX" : "you@gmail.com"}
-              maxLength={method === "mobile" ? 15 : 100}
-              style={{ width: "100%", padding: "13px 44px 13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E", boxSizing: "border-box" }}
-            />
-            {method === "mobile" && (
-              <button onClick={() => setShowInput(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, display: "flex", alignItems: "center" }}>
-                <img src={showInput ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.45 }} />
-              </button>
-            )}
+            <input type={showMobile ? "text" : "password"} value={mobile} onChange={e => setMobile(e.target.value)} placeholder="+880 XXXXXXXXXX" maxLength={15} style={fieldStyle} />
+            <button onClick={() => setShowMobile(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, display: "flex", alignItems: "center" }}>
+              <img src={showMobile ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.45 }} />
+            </button>
           </div>
         </div>
 
         {/* Password */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>Password</div>
+          <div style={labelStyle}>Password</div>
           <div style={{ position: "relative" }}>
-            <input
-              type={showPass ? "text" : "password"}
-              value={pass} onChange={(e) => setPass(e.target.value)}
-              placeholder="••••••••" maxLength={64}
-              style={{ width: "100%", padding: "13px 44px 13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E", boxSizing: "border-box" }}
-            />
+            <input type={showPass ? "text" : "password"} value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" maxLength={64} style={fieldStyle} />
             <button onClick={() => setShowPass(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, display: "flex", alignItems: "center" }}>
               <img src={showPass ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.45 }} />
             </button>
@@ -119,32 +91,21 @@ export default function RegisterScreen({ onRegister, onBack }) {
 
         {/* Confirm Password */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>Confirm Password</div>
+          <div style={labelStyle}>Confirm Password</div>
           <div style={{ position: "relative" }}>
-            <input
-              type={showConfirm ? "text" : "password"}
-              value={confirm} onChange={(e) => setConfirm(e.target.value)}
-              placeholder="••••••••" maxLength={64}
-              style={{ width: "100%", padding: "13px 44px 13px 16px", borderRadius: 12, border: "1.5px solid #eee", fontSize: 14, fontFamily: "'Poppins',sans-serif", background: "#fafafa", color: "#1A1A2E", boxSizing: "border-box" }}
-            />
+            <input type={showConfirm ? "text" : "password"} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="••••••••" maxLength={64} style={fieldStyle} />
             <button onClick={() => setShowConfirm(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1, display: "flex", alignItems: "center" }}>
               <img src={showConfirm ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.45 }} />
             </button>
           </div>
         </div>
 
-        {err && <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8 }}>{err}</div>}
-
-        {rem <= 1 && rem > 0 && !err && (
-          <div style={{ color: "#FF8F00", fontSize: 12, marginBottom: 8 }}>
-            ⚠️ Last attempt before temporary lockout.
-          </div>
-        )}
+        {err && <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "#FFF0F0", borderRadius: 8 }}>{err}</div>}
 
         <SlideVerify onVerify={setVerified} reset={slideReset} />
 
-        <button onClick={submit} disabled={loading || locked || !verified}
-          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading || locked || !verified ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: loading || locked || !verified ? "not-allowed" : "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <button onClick={submit} disabled={loading || !verified}
+          style={{ width: "100%", padding: "15px 0", borderRadius: 14, border: "none", marginTop: 4, background: loading || !verified ? "#ccc" : gradient, color: "#fff", fontSize: 16, fontWeight: 700, cursor: loading || !verified ? "not-allowed" : "pointer", boxShadow: "0 6px 20px #EF535044", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {loading ? (
             <><div style={{ width: 18, height: 18, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Creating...</>
           ) : "Create Account →"}

@@ -3,6 +3,7 @@ import { G, CSS, gradient } from "../constants";
 import SubHeader from "../components/SubHeader";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit } from "../utils/rateLimiter";
 import { recordDeposit } from "../utils/activityStore";
+import DepositScreen from "./DepositScreen";
 
 // ── Donut chart ──────────────────────────────────────────────────────────────
 function Donut({ pct, color, size = 90 }) {
@@ -20,133 +21,7 @@ function Donut({ pct, color, size = 90 }) {
   );
 }
 
-// ── Deposit Screen ───────────────────────────────────────────────────────────
-function DepositScreen({ balance, setBalance, onBack }) {
-  const [method, setMethod] = useState("nagad");
-  const [channel, setChannel] = useState(0);
-  const [amount, setAmount] = useState("");
-  const [done, setDone] = useState("");
 
-  const methods = [
-    { id: "nagad",   label: "Nagad",   emoji: "🔥", color: "#e8501a" },
-    { id: "bkash",   label: "bKash",   emoji: "💳", color: "#d01f8c" },
-    { id: "binance", label: "Binance", emoji: "🟡", color: "#F0B90B" },
-  ];
-
-  const channels = {
-    nagad:   [{ name: "NagadPay-Direct", range: "৳50 - ৳50K" }, { name: "NagadPay-Agent", range: "৳50 - ৳20K" }],
-    bkash:   [{ name: "bKash-Personal", range: "৳50 - ৳50K" }, { name: "bKash-Merchant", range: "৳100 - ৳30K" }],
-    binance: [{ name: "Binance Pay", range: "৳500 - ৳100K" }, { name: "Binance USDT (TRC20)", range: "৳500 - ৳500K" }],
-  };
-
-  const presets = [100, 200, 500, 1000, 2000, 5000];
-
-  const doDeposit = () => {
-    const a = parseFloat(amount);
-    if (!a || a <= 0) return;
-    const check = checkRateLimit("deposit");
-    if (!check.allowed) { setDone(check.message); setTimeout(() => setDone(""), 5000); return; }
-    clearRateLimit("deposit");
-    setBalance(b => b + a);
-    recordDeposit(a);
-    setDone(`✅ Deposited ৳${a.toFixed(2)} successfully!`);
-    setAmount("");
-    setTimeout(() => setDone(""), 3000);
-  };
-
-  return (
-    <div style={{ maxWidth: 480, margin: "0 auto", background: "#F4F4F8", minHeight: "100vh", fontFamily: "'Poppins',sans-serif", paddingBottom: 30 }}>
-      {/* Header */}
-      <div style={{ background: gradient, padding: "0 0 0" }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "14px 16px" }}>
-          <button onClick={onBack} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", fontSize: 20, cursor: "pointer", borderRadius: 8, padding: "4px 10px", lineHeight: 1 }}>‹</button>
-          <span style={{ flex: 1, textAlign: "center", color: "#fff", fontWeight: 700, fontSize: 17 }}>Deposit</span>
-          <button onClick={onBack} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.8)", fontSize: 13, cursor: "pointer", fontFamily: "'Poppins',sans-serif" }}>Deposit history</button>
-        </div>
-        {/* Balance card */}
-        <div style={{ margin: "0 14px 16px", background: "rgba(255,255,255,0.15)", borderRadius: 16, padding: "16px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 16 }}>💼</span>
-            <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 600 }}>Balance</span>
-          </div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", letterSpacing: 1 }}>৳{balance.toFixed(2)}</div>
-          <div style={{ marginTop: 8, color: "rgba(255,255,255,0.4)", fontSize: 12, letterSpacing: 4 }}>**** **** **** ****</div>
-        </div>
-      </div>
-
-      <div style={{ padding: "14px" }}>
-        {/* Method tabs */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          {methods.map((m, i) => {
-            const active = method === m.id;
-            return (
-              <div key={m.id} onClick={() => { setMethod(m.id); setChannel(0); }} style={{
-                flex: 1, background: active ? "#fff" : "transparent", border: active ? `2px solid ${m.color}` : "2px solid #e0e0e0",
-                borderRadius: 14, padding: "10px 4px", cursor: "pointer", textAlign: "center",
-                boxShadow: active ? `0 2px 10px ${m.color}33` : "none", transition: "all 0.2s",
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>{m.emoji}</div>
-                <div style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? m.color : "#888" }}>{m.label}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Channel select */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", marginBottom: 14, boxShadow: "0 2px 8px #0001" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 16 }}>📡</span>
-            <span style={{ fontWeight: 700, fontSize: 14, color: G.text }}>Select channel</span>
-          </div>
-          {channels[method].map((ch, i) => (
-            <div key={i} onClick={() => setChannel(i)} style={{
-              background: channel === i ? gradient : "#f8f8f8",
-              borderRadius: 12, padding: "14px 16px", marginBottom: 8, cursor: "pointer",
-              border: channel === i ? "none" : "1.5px solid #eee",
-              display: "flex", alignItems: "center", gap: 12,
-            }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: channel === i ? "rgba(255,255,255,0.2)" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                {method === "nagad" ? "🔥" : method === "bkash" ? "💳" : "🟡"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: channel === i ? "#fff" : G.text }}>{ch.name}</div>
-                <div style={{ fontSize: 12, color: channel === i ? "rgba(255,255,255,0.75)" : G.sub, marginTop: 2 }}>Balance: {ch.range}</div>
-              </div>
-              {channel === i && <div style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>✓</div>}
-            </div>
-          ))}
-        </div>
-
-        {/* Amount */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: "16px", boxShadow: "0 2px 8px #0001", marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: G.sub, fontWeight: 600, marginBottom: 10 }}>Deposit Amount (৳)</div>
-          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount..."
-            style={{ width: "100%", padding: "13px 14px", borderRadius: 11, border: "1.5px solid #eee", fontSize: 16, fontFamily: "'Poppins',sans-serif", color: G.text, outline: "none", marginBottom: 12, boxSizing: "border-box" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-            {presets.map(p => (
-              <button key={p} onClick={() => setAmount(p.toString())} style={{
-                padding: "9px 0", borderRadius: 9, border: `1.5px solid ${amount == p ? "#EF5350" : "#e0e0e0"}`,
-                background: amount == p ? "#EF5350" : "#fff", color: amount == p ? "#fff" : "#555",
-                fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'Poppins',sans-serif",
-              }}>৳{p}</button>
-            ))}
-          </div>
-        </div>
-
-        {done && <div style={{ background: "#E8F5E9", borderRadius: 10, padding: 12, marginBottom: 12, color: "#2E7D32", fontWeight: 600, fontSize: 13 }}>{done}</div>}
-
-        {/* Bottom bar */}
-        <div style={{ background: "#fff", borderRadius: 14, padding: "12px 16px", boxShadow: "0 2px 8px #0001", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: 11, color: G.sub }}>Recharge Method:</div>
-            <div style={{ fontWeight: 700, fontSize: 13, color: G.text }}>{channels[method][channel].name}</div>
-          </div>
-          <button onClick={doDeposit} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: gradient, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "'Poppins',sans-serif", boxShadow: "0 4px 16px #EF535044" }}>Deposit</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Withdraw Screen ──────────────────────────────────────────────────────────
 function WithdrawScreen({ balance, setBalance, accounts, onBack }) {
@@ -286,7 +161,7 @@ function WithdrawScreen({ balance, setBalance, accounts, onBack }) {
 export default function WalletScreen({ balance, setBalance, accounts, onBack, activeNav, setActiveNav }) {
   const [subScreen, setSubScreen] = useState(null);
 
-  if (subScreen === "deposit")  return <DepositScreen  balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setSubScreen(null)} />;
+  if (subScreen === "deposit")  return <DepositScreen  balance={balance} setBalance={setBalance} onBack={() => setSubScreen(null)} />;
   if (subScreen === "withdraw") return <WithdrawScreen balance={balance} setBalance={setBalance} accounts={accounts} onBack={() => setSubScreen(null)} />;
 
   const totalDeposit = 3800;
