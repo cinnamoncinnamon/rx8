@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { CSS } from "../../constants";
-import lottie from "lottie-web";
-import { aviatorCrashPoint } from "../../utils/gameEngine";
-const BETTING_MS = 5000;
-const CRASH_MS = 3200;
-const GROWTH_RATE = 0.00006;
+import { getToken } from "../../api";
 
-function generateCrashPoint() {
-  return aviatorCrashPoint();
-}
+const WS_URL = "ws://localhost:4000/ws/aviator";
+const GROWTH_RATE = 0.00011; // cosmetic only — mirrors the server's rate purely so the plane's
+                              // flight path animates smoothly; the actual crash point and every
+                              // payout are decided server-side, this never feeds into either.
 
-function multiplierAt(elapsedMs) {
-  return parseFloat((Math.pow(Math.E, GROWTH_RATE * elapsedMs * 16)).toFixed(2));
+// Inverse of the server's multiplier-from-elapsed-time function — used only
+// to drive the plane's path animation from a multiplier value, never to
+// decide any outcome.
+function elapsedAtMultiplier(m) {
+  return Math.log(Math.max(1, m)) / GROWTH_RATE;
 }
 
 function HistoryPill({ m }) {
@@ -44,6 +44,7 @@ function Plane({ phase, planeX, planeY, planeRot, crashAnim }) {
     </div>
   );
 }
+
 function BetPanel({ slot, phase, balance, betAmount, setBetAmount, autoCashout, setAutoCashout, hasBet, cashedOutAt, multiplier, placeBet, cancelBet, cashOut, collapsible }) {
   const [tab, setTab] = useState("bet");
   const [collapsed, setCollapsed] = useState(false);
@@ -107,49 +108,55 @@ function BetPanel({ slot, phase, balance, betAmount, setBetAmount, autoCashout, 
         {/* Big Button */}
         <button
           onClick={() => { if (canBet) placeBet(); else if (canCancel) cancelBet(); else if (canCash) cashOut(); }}
-          style={{ width:130, borderRadius:12, border:"none", background:btnBg, color:"#fff", fontWeight:900, fontSize:15, cursor:btnBg==="#374151"?"not-allowed":"pointer", fontFamily:"'Poppins',sans-serif", whiteSpace:"pre-line", lineHeight:1.4, boxShadow:canCash?"0 4px 20px rgba(34,197,94,0.4)":canBet?"0 4px 20px rgba(34,197,94,0.3)":"none", animation:canCash?"pulse 1.2s ease infinite":"none" }}>
+          disabled={!canBet && !canCancel && !canCash}
+          style={{ width:130, borderRadius:12, border:"none", background:btnBg, color:"#fff", fontWeight:900, fontSize:15, cursor:(canBet||canCancel||canCash)?"pointer":"not-allowed", fontFamily:"'Poppins',sans-serif", whiteSpace:"pre-line", lineHeight:1.4, boxShadow:canCash?"0 4px 20px rgba(34,197,94,0.4)":canBet?"0 4px 20px rgba(34,197,94,0.3)":"none", animation:canCash?"pulse 1.2s ease infinite":"none" }}>
           {btnText}
         </button>
       </div>
     </div>
   );
 }
+
 export default function AviatorGame({ balance, setBalance, onBack }) {
-  const [phase, setPhase] = useState("betting");
-  const [countdown, setCountdown] = useState(BETTING_MS);
+  const [phase, setPhase] = useState("betting"); // "betting" | "flying" | "crashed" — "flying" maps to the server's "running"
+  const [countdown, setCountdown] = useState(0);
+  const [bettingMs, setBettingMs] = useState(7000);
   const [multiplier, setMultiplier] = useState(1.0);
-  const [history, setHistory] = useState([1.28, 77.76, 1.76, 17.13, 7.33, 11.42, 1.05, 3.24, 2.14, 1.42]);
+  const [history, setHistory] = useState([]);
   const [betAmount, setBetAmount] = useState(10);
   const [betAmount2, setBetAmount2] = useState(10);
   const [autoCashout2, setAutoCashout2] = useState("");
-  
   const [hasBet2, setHasBet2] = useState(false);
   const [cashedOutAt2, setCashedOutAt2] = useState(null);
-  const [collapsed2, setCollapsed2] = useState(false);
   const [autoCashout, setAutoCashout] = useState("");
   const [hasBet, setHasBet] = useState(false);
   const [cashedOutAt, setCashedOutAt] = useState(null);
-  const [lastWin, setLastWin] = useState(null);
   const [crashAnim, setCrashAnim] = useState(0);
   const [cashoutHistory, setCashoutHistory] = useState([]);
-  const [flightElapsed, setFlightElapsed] = useState(0);
+  const [wsStatus, setWsStatus] = useState("connecting");
+  const [errMsg, setErrMsg] = useState("");
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
-  const startTimeRef = useRef(0);
-  const flyRafRef = useRef(0);
-  const bettingRafRef = useRef(0);
+  const wsRef = useRef(null);
+  const countdownRafRef = useRef(0);
   const crashRafRef = useRef(0);
-  const nextRoundTimeoutRef = useRef(null);
-  const crashRef = useRef(0);
-  const cashedRef = useRef(false);
+  const bettingEndsAtRef = useRef(0);
   const hasBetRef = useRef(false);
+  const hasBet2Ref = useRef(false);
+  const cashedOutRef = useRef(false);
+  const cashedOut2Ref = useRef(false);
   const autoCashoutRef = useRef("");
+  const autoCashout2Ref = useRef("");
   const betAmountRef = useRef(betAmount);
+  const betAmount2Ref = useRef(betAmount2);
   const canvasRef = useRef(null);
 
   useEffect(() => { hasBetRef.current = hasBet; }, [hasBet]);
+  useEffect(() => { hasBet2Ref.current = hasBet2; }, [hasBet2]);
   useEffect(() => { autoCashoutRef.current = autoCashout; }, [autoCashout]);
+  useEffect(() => { autoCashout2Ref.current = autoCashout2; }, [autoCashout2]);
   useEffect(() => { betAmountRef.current = betAmount; }, [betAmount]);
+  useEffect(() => { betAmount2Ref.current = betAmount2; }, [betAmount2]);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -164,118 +171,155 @@ export default function AviatorGame({ balance, setBalance, onBack }) {
     return () => ro.disconnect();
   }, []);
 
-  const doCashout = useCallback((m) => {
-    if (cashedRef.current || !hasBetRef.current) return;
-    cashedRef.current = true;
-    setCashedOutAt(m);
-    const bet = betAmountRef.current;
-    const win = bet * m;
-    const isAuto = autoCashoutRef.current !== "" && m >= Number(autoCashoutRef.current);
-    setBalance((b) => b + win);
-    setLastWin(win);
-    setCashoutHistory((ch) => [{ id:Date.now(), bet, multiplier:m, win, auto:isAuto, crashed:false, time:Date.now() }, ...ch].slice(0, 30));
-    setHasBet(false);
-    hasBetRef.current = false;
+  // ── WebSocket connection — real server, real wallet, real provably-fair crash point ──
+  const connect = useCallback(() => {
+    const token = getToken();
+    if (!token) { setErrMsg("Not logged in"); return; }
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+    setWsStatus("connecting");
+
+    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token }));
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "auth_ok") setWsStatus("connected");
+
+      if (msg.type === "state") {
+        setPhase(msg.phase === "running" ? "flying" : msg.phase);
+        setMultiplier(msg.multiplier);
+        setHistory((msg.history || []).map(h => h.crashPoint));
+        if (msg.phase === "betting" && msg.bettingEndsAt) bettingEndsAtRef.current = msg.bettingEndsAt;
+      }
+
+      if (msg.type === "betting_open") {
+        setPhase("betting");
+        setMultiplier(1.0);
+        setCrashAnim(0);
+        setHasBet(false); hasBetRef.current = false; setCashedOutAt(null); cashedOutRef.current = false;
+        setHasBet2(false); hasBet2Ref.current = false; setCashedOutAt2(null); cashedOut2Ref.current = false;
+        setBettingMs(msg.bettingMs);
+        bettingEndsAtRef.current = msg.bettingEndsAt;
+        setHistory((msg.history || []).map(h => h.crashPoint));
+      }
+
+      if (msg.type === "round_start") {
+        setPhase("flying");
+      }
+
+      if (msg.type === "tick") {
+        setMultiplier(msg.multiplier);
+        // Auto cashout — client-triggered based on the last server tick, but
+        // the server independently validates the multiplier at the moment it
+        // receives the request, so this is a convenience, not the authority.
+        if (hasBetRef.current && !cashedOutRef.current && autoCashoutRef.current !== "" && msg.multiplier >= Number(autoCashoutRef.current)) {
+          cashedOutRef.current = true;
+          wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 1 }));
+        }
+        if (hasBet2Ref.current && !cashedOut2Ref.current && autoCashout2Ref.current !== "" && msg.multiplier >= Number(autoCashout2Ref.current)) {
+          cashedOut2Ref.current = true;
+          wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 2 }));
+        }
+      }
+
+      if (msg.type === "bet_accepted") {
+        setBalance(msg.newBalance);
+        if (msg.slot === 1) { setHasBet(true); hasBetRef.current = true; }
+        else { setHasBet2(true); hasBet2Ref.current = true; }
+      }
+
+      if (msg.type === "cancel_accepted") {
+        setBalance(msg.newBalance);
+        if (msg.slot === 1) { setHasBet(false); hasBetRef.current = false; }
+        else { setHasBet2(false); hasBet2Ref.current = false; }
+      }
+
+      if (msg.type === "cashout_accepted") {
+        setBalance(msg.newBalance);
+        if (msg.slot === 1) { setCashedOutAt(msg.multiplier); cashedOutRef.current = true; }
+        else { setCashedOutAt2(msg.multiplier); cashedOut2Ref.current = true; }
+        setCashoutHistory(ch => [{ id: Date.now(), bet: msg.slot === 1 ? betAmountRef.current : betAmount2Ref.current, multiplier: msg.multiplier, win: msg.winAmount, crashed: false, time: Date.now() }, ...ch].slice(0, 30));
+      }
+
+      if (msg.type === "crashed") {
+        setPhase("crashed");
+        setMultiplier(msg.crashPoint);
+        setHistory(h => [msg.crashPoint, ...h].slice(0, 20));
+
+        if (hasBetRef.current && !cashedOutRef.current) {
+          setCashoutHistory(ch => [{ id: Date.now()+1, bet: betAmountRef.current, multiplier: msg.crashPoint, win: 0, crashed: true, time: Date.now() }, ...ch].slice(0, 30));
+        }
+        if (hasBet2Ref.current && !cashedOut2Ref.current) {
+          setCashoutHistory(ch => [{ id: Date.now()+2, bet: betAmount2Ref.current, multiplier: msg.crashPoint, win: 0, crashed: true, time: Date.now() }, ...ch].slice(0, 30));
+        }
+
+        const start = performance.now();
+        const animTick = () => {
+          const t = Math.min(1, (performance.now() - start) / 1400);
+          setCrashAnim(t);
+          if (t < 1) crashRafRef.current = requestAnimationFrame(animTick);
+        };
+        animTick();
+      }
+
+      if (msg.type === "error") {
+        setErrMsg(msg.message);
+        setTimeout(() => setErrMsg(""), 3000);
+      }
+    };
+
+    ws.onerror = () => setWsStatus("error");
+    ws.onclose = () => { setWsStatus("connecting"); setTimeout(connect, 3000); };
   }, [setBalance]);
 
   useEffect(() => {
-    let mounted = true;
-    const cancelAll = () => {
-      cancelAnimationFrame(bettingRafRef.current);
-      cancelAnimationFrame(flyRafRef.current);
-      cancelAnimationFrame(crashRafRef.current);
-      if (nextRoundTimeoutRef.current) { clearTimeout(nextRoundTimeoutRef.current); nextRoundTimeoutRef.current = null; }
-    };
+    connect();
+    return () => { cancelAnimationFrame(countdownRafRef.current); cancelAnimationFrame(crashRafRef.current); if (wsRef.current) wsRef.current.close(); };
+  }, [connect]);
 
-    const runRound = () => {
-      if (!mounted) return;
-      cancelAll();
-      setPhase("betting"); setMultiplier(1.0); setFlightElapsed(0);
-      setCashedOutAt(null); setCrashAnim(0); cashedRef.current = false;
-      const cp = generateCrashPoint();
-      crashRef.current = cp;
-      const bettingStart = performance.now();
-      const bettingTick = () => {
-        if (!mounted) return;
-        const elapsed = performance.now() - bettingStart;
-        const remaining = Math.max(0, BETTING_MS - elapsed);
-        setCountdown(remaining);
-        if (remaining > 0) bettingRafRef.current = requestAnimationFrame(bettingTick);
-        else startFlying();
-      };
-      bettingTick();
+  // Countdown display, derived from the server-provided bettingEndsAt timestamp
+  // rather than counted locally — so it's correct even on reconnect mid-phase.
+  useEffect(() => {
+    if (phase !== "betting") return;
+    const tick = () => {
+      const remaining = Math.max(0, bettingEndsAtRef.current - Date.now());
+      setCountdown(remaining);
+      if (remaining > 0) countdownRafRef.current = requestAnimationFrame(tick);
     };
-
-    const startFlying = () => {
-      if (!mounted) return;
-      cancelAnimationFrame(bettingRafRef.current);
-      setPhase("flying"); setCrashAnim(0);
-      startTimeRef.current = performance.now();
-      const flyTick = () => {
-        if (!mounted) return;
-        const elapsed = performance.now() - startTimeRef.current;
-        const m = multiplierAt(elapsed);
-        setMultiplier(m); setFlightElapsed(elapsed);
-        if (hasBetRef.current && !cashedRef.current && autoCashoutRef.current !== "" && m >= Number(autoCashoutRef.current)) doCashout(m);
-        if (m >= crashRef.current) { setMultiplier(crashRef.current); crash(); return; }
-        flyRafRef.current = requestAnimationFrame(flyTick);
-      };
-      flyTick();
-    };
-
-    const crash = () => {
-      if (!mounted) return;
-      cancelAnimationFrame(flyRafRef.current);
-      setPhase("crashed");
-      setHistory((h) => [{ id:Date.now(), multiplier:crashRef.current }, ...h].slice(0, 20));
-      if (hasBetRef.current && !cashedRef.current) {
-        setCashoutHistory((ch) => [{ id:Date.now(), bet:betAmountRef.current, multiplier:crashRef.current, win:0, auto:false, crashed:true, time:Date.now() }, ...ch].slice(0, 30));
-        setHasBet(false); hasBetRef.current = false;
-      }
-      const start = performance.now();
-      const animTick = () => {
-        if (!mounted) return;
-        const t = Math.min(1, (performance.now() - start) / 1400);
-        setCrashAnim(t);
-        if (t < 1) crashRafRef.current = requestAnimationFrame(animTick);
-      };
-      animTick();
-      nextRoundTimeoutRef.current = setTimeout(() => { nextRoundTimeoutRef.current = null; if (mounted) runRound(); }, CRASH_MS);
-    };
-
-    runRound();
-    return () => { mounted = false; cancelAll(); };
-  }, [doCashout]);
+    tick();
+    return () => cancelAnimationFrame(countdownRafRef.current);
+  }, [phase]);
 
   const placeBet = () => {
-    if (phase !== "betting" || betAmount <= 0 || betAmount > balance) return;
-    setBalance((b) => b - betAmount);
-    setHasBet(true); hasBetRef.current = true; setLastWin(null);
+    if (phase !== "betting" || hasBet || betAmount <= 0 || betAmount > balance) return;
+    wsRef.current?.send(JSON.stringify({ type: "bet", slot: 1, amount: betAmount }));
   };
   const cancelBet = () => {
     if (phase !== "betting" || !hasBet) return;
-    setBalance((b) => b + betAmount);
-    setHasBet(false); hasBetRef.current = false;
+    wsRef.current?.send(JSON.stringify({ type: "cancel", slot: 1 }));
   };
-  const cashOut = () => { if (phase !== "flying" || !hasBet) return; doCashout(multiplier); };
-const placeBet2 = () => {
-    if (phase !== "betting" || betAmount2 <= 0 || betAmount2 > balance || hasBet2) return;
-    setBalance(b => b - betAmount2);
-    setHasBet2(true);
+  const cashOut = () => {
+    if (phase !== "flying" || !hasBet || cashedOutAt) return;
+    wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 1 }));
+  };
+  const placeBet2 = () => {
+    if (phase !== "betting" || hasBet2 || betAmount2 <= 0 || betAmount2 > balance) return;
+    wsRef.current?.send(JSON.stringify({ type: "bet", slot: 2, amount: betAmount2 }));
   };
   const cancelBet2 = () => {
     if (phase !== "betting" || !hasBet2) return;
-    setBalance(b => b + betAmount2);
-    setHasBet2(false);
+    wsRef.current?.send(JSON.stringify({ type: "cancel", slot: 2 }));
   };
   const cashOut2 = () => {
     if (phase !== "flying" || !hasBet2 || cashedOutAt2) return;
-    const win = betAmount2 * multiplier;
-    setBalance(b => b + win);
-    setCashedOutAt2(multiplier);
-    setHasBet2(false);
+    wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 2 }));
   };
-  // Curve geometry
+
+  // Curve geometry — purely cosmetic, derives the plane's position from the
+  // current multiplier so the flight path animates smoothly between the
+  // server's 10-times-a-second ticks.
+  const flightElapsed = phase === "betting" ? 0 : elapsedAtMultiplier(multiplier);
   const curve = (p) => {
     const cp = Math.min(1, Math.max(0, p));
     return { x: cp * 88, y: 100 - Math.pow(cp, 0.55) * 88 };
@@ -322,16 +366,27 @@ const placeBet2 = () => {
           <button onClick={onBack} style={{ background:"none", border:"none", color:"#aaa", fontSize:22, cursor:"pointer" }}>‹</button>
           <span style={{ color:"#ef4444", fontWeight:900, fontSize:22, fontStyle:"italic", letterSpacing:2, textShadow:"0 0 20px rgba(239,68,68,0.6)" }}>AVIATOR</span>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(0,0,0,0.5)", padding:"6px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,0.05)" }}>
-          <span style={{ fontWeight:700, color:"#10b981", fontSize:15, fontFamily:"monospace" }}>{balance.toFixed(2)}</span>
-          <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontWeight:600 }}>USD</span>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {wsStatus !== "connected" && (
+            <span style={{ fontSize:11, color: wsStatus === "error" ? "#ef4444" : "#f59e0b" }}>
+              {wsStatus === "error" ? "Connection error" : "Connecting…"}
+            </span>
+          )}
+          <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(0,0,0,0.5)", padding:"6px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,0.05)" }}>
+            <span style={{ fontWeight:700, color:"#10b981", fontSize:15, fontFamily:"monospace" }}>{balance.toFixed(2)}</span>
+            <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)", fontWeight:600 }}>USD</span>
+          </div>
         </div>
       </div>
+
+      {errMsg && (
+        <div style={{ background:"rgba(239,68,68,0.15)", color:"#f87171", padding:"6px 16px", fontSize:12, textAlign:"center" }}>{errMsg}</div>
+      )}
 
       {/* History */}
       <div style={{ background:"#11151c", padding:"8px 12px", borderBottom:"1px solid rgba(255,255,255,0.05)", overflowX:"auto", display:"flex", gap:6 }}>
         {history.length === 0 && <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>No rounds yet</span>}
-        {history.map((h, i) => <HistoryPill key={h.id || i} m={h.multiplier || h} />)}
+        {history.map((m, i) => <HistoryPill key={i} m={m} />)}
       </div>
 
       {/* Game Canvas */}
@@ -373,7 +428,7 @@ const placeBet2 = () => {
               <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10, letterSpacing:"0.3em", textTransform:"uppercase", marginBottom:8 }}>Waiting for next round</div>
               <div style={{ fontSize:"clamp(48px,12vw,72px)", fontWeight:900, color:"#ef4444", fontFamily:"monospace", textShadow:"0 0 25px rgba(239,68,68,0.6)" }}>{(countdown/1000).toFixed(1)}s</div>
               <div style={{ width:176, height:4, background:"rgba(255,255,255,0.1)", borderRadius:4, marginTop:16, overflow:"hidden", margin:"16px auto 0" }}>
-                <div style={{ height:"100%", background:"linear-gradient(90deg,#ef4444,#ec4899)", width:`${100-(countdown/BETTING_MS)*100}%`, transition:"width 0.08s linear" }}/>
+                <div style={{ height:"100%", background:"linear-gradient(90deg,#ef4444,#ec4899)", width:`${100-(countdown/Math.max(1,bettingMs))*100}%`, transition:"width 0.08s linear" }}/>
               </div>
             </div>
           ) : (

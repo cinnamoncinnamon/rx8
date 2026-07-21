@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { getToken } from "../../api";
 
 // ── Put these images in src/games/roadrush/assets/ ──
 import bgImg from "./assets/bg.jpg";
@@ -6,17 +7,9 @@ import cloudsImg from "./assets/clouds.png";
 import foregroundImg from "./assets/foreground.png";
 import carImg from "./assets/car.png";
 
-// ─────────────────────── Game Engine ───────────────────────
-function generateCrashPoint() {
-  const r = Math.random();
-  if (r < 0.03) return 1.0;
-  const cp = 0.97 / (1 - r);
-  return Math.max(1.01, Math.min(cp, 200));
-}
-function multiplierAt(elapsedMs) {
-  const s = elapsedMs / 1000;
-  return Math.max(1, Math.pow(1.06, s));
-}
+const WS_URL = "ws://localhost:4000/ws/roadrush";
+const GROWTH_RATE_COSMETIC = 0.00011; // mirrors the server's rate purely for the car's progress animation between ticks — never decides any outcome
+
 function fmt(n) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -96,7 +89,7 @@ function ChipBtn({ children, onClick, disabled }) {
 
 function BetPanel({ label, bet, setBet, phase, multiplier, balance, onPlace, onCashOut, open, onToggle }) {
   const chips = [1, 2, 5, 10];
-  const setStake = (n) => setBet(b => ({ ...b, stake: Math.max(0.1, Math.min(n, balance + b.stake)) }));
+  const setStake = (n) => setBet(b => ({ ...b, stake: Math.max(0.1, Math.min(n, balance + (b.status !== "none" ? b.stake : 0))) }));
 
   const canCashOut = phase === "running" && bet.status === "active";
   const isQueued = bet.status === "queued";
@@ -179,124 +172,152 @@ function BetPanel({ label, bet, setBet, phase, multiplier, balance, onPlace, onC
 }
 
 // ─────────────────────── Main Component ───────────────────────
-export default function RoadRushGame({ onExit }) {
-  const IDLE_MS = 5000;
-  const CRASH_PAUSE_MS = 2500;
-
-  const [balance, setBalance] = useState(() => {
-    const raw = localStorage.getItem("roadrush:balance");
-    const n = Number(raw);
-    return Number.isFinite(n) && n >= 0 ? n : 1000;
-  });
-  const [phase, setPhase] = useState("idle");
+export default function RoadRushGame({ balance, setBalance, onExit }) {
+  const [phase, setPhase] = useState("idle"); // "idle" (betting) | "running" | "crashed"
   const [multiplier, setMultiplier] = useState(1);
-  const [history, setHistory] = useState([5.71, 2.49, 2.40, 1.85, 1.03]);
-  const [roundId, setRoundId] = useState(1946480);
-  const [countdown, setCountdown] = useState(5);
+  const [history, setHistory] = useState([]);
+  const [roundId, setRoundId] = useState(null);
+  const [countdown, setCountdown] = useState(0);
   const [bet1, setBet1] = useState(initialBet(10));
   const [bet2, setBet2] = useState(initialBet(10));
   const [panel2Open, setPanel2Open] = useState(false);
+  const [wsStatus, setWsStatus] = useState("connecting");
 
-  const crashRef = useRef(0);
-  const startRef = useRef(0);
-  const rafRef = useRef(null);
-  const phaseRef = useRef("idle");
+  const wsRef = useRef(null);
+  const bettingEndsAtRef = useRef(0);
+  const countdownRafRef = useRef(0);
+  const bet1Ref = useRef(bet1);
+  const bet2Ref = useRef(bet2);
+  const autoRolled1Ref = useRef(false);
+  const autoRolled2Ref = useRef(false);
 
-  useEffect(() => { localStorage.setItem("roadrush:balance", String(balance)); }, [balance]);
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { bet1Ref.current = bet1; }, [bet1]);
+  useEffect(() => { bet2Ref.current = bet2; }, [bet2]);
 
-  const startRound = useCallback(() => {
-    crashRef.current = generateCrashPoint();
-    startRef.current = performance.now();
-    setMultiplier(1);
-    setPhase("running");
-    setBet1(b => b.status === "queued" ? { ...b, status:"active" } : b);
-    setBet2(b => b.status === "queued" ? { ...b, status:"active" } : b);
-  }, []);
+  // ── Real backend connection — same engine/protocol as Aviator & Moto Ride ──
+  const connect = useCallback(() => {
+    const token = getToken();
+    if (!token) return;
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+    setWsStatus("connecting");
 
-  const endRound = useCallback((finalMult) => {
-    setPhase("crashed");
-    setHistory(h => [Number(finalMult.toFixed(2)), ...h].slice(0, 20));
-    setBet1(b => b.status === "active" ? { ...b, status:"lost" } : b);
-    setBet2(b => b.status === "active" ? { ...b, status:"lost" } : b);
-    setTimeout(() => {
-      setRoundId(r => r + 1);
-      setMultiplier(1);
-      setPhase("idle");
-      setCountdown(5);
-      setBet1(b => ({ ...b, status:"none", cashoutMultiplier:null }));
-      setBet2(b => ({ ...b, status:"none", cashoutMultiplier:null }));
-    }, CRASH_PAUSE_MS);
-  }, []);
+    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token }));
 
-  // RAF loop
-  useEffect(() => {
-    if (phase !== "running") return;
-    const tick = () => {
-      const elapsed = performance.now() - startRef.current;
-      const m = multiplierAt(elapsed);
-      if (m >= crashRef.current) {
-        setMultiplier(crashRef.current);
-        endRound(crashRef.current);
-        return;
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "auth_ok") setWsStatus("connected");
+
+      if (msg.type === "state") {
+        setPhase(msg.phase === "running" ? "running" : msg.phase);
+        setMultiplier(msg.multiplier);
+        setRoundId(msg.roundId);
+        setHistory((msg.history || []).map(h => h.crashPoint));
+        if (msg.phase === "betting" && msg.bettingEndsAt) bettingEndsAtRef.current = msg.bettingEndsAt;
       }
-      setMultiplier(m);
-      setBet1(b => {
-        if (b.status === "active" && b.autoCashout > 0 && m >= b.autoCashout) {
-          const win = b.stake * b.autoCashout;
-          setBalance(bal => bal + win);
-          return { ...b, status:"cashed", cashoutMultiplier:b.autoCashout, lastWin:win };
-        }
-        return b;
-      });
-      setBet2(b => {
-        if (b.status === "active" && b.autoCashout > 0 && m >= b.autoCashout) {
-          const win = b.stake * b.autoCashout;
-          setBalance(bal => bal + win);
-          return { ...b, status:"cashed", cashoutMultiplier:b.autoCashout, lastWin:win };
-        }
-        return b;
-      });
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [phase, endRound]);
 
-  // Idle countdown
+      if (msg.type === "betting_open") {
+        setPhase("idle");
+        setMultiplier(1);
+        setRoundId(msg.roundId);
+        bettingEndsAtRef.current = msg.bettingEndsAt;
+        setHistory((msg.history || []).map(h => h.crashPoint));
+        autoRolled1Ref.current = false;
+        autoRolled2Ref.current = false;
+        setBet1(b => ({ ...b, status: "none", cashoutMultiplier: null, lastWin: null }));
+        setBet2(b => ({ ...b, status: "none", cashoutMultiplier: null, lastWin: null }));
+      }
+
+      if (msg.type === "round_start") {
+        setPhase("running");
+        setBet1(b => b.status === "queued" ? { ...b, status: "active" } : b);
+        setBet2(b => b.status === "queued" ? { ...b, status: "active" } : b);
+      }
+
+      if (msg.type === "tick") {
+        setMultiplier(msg.multiplier);
+        // Auto cashout — client-triggered off the last server tick, but the
+        // server independently validates the multiplier when it receives the
+        // request, so this is a convenience, not the authority.
+        if (bet1Ref.current.status === "active" && !autoRolled1Ref.current && bet1Ref.current.autoCashout > 0 && msg.multiplier >= bet1Ref.current.autoCashout) {
+          autoRolled1Ref.current = true;
+          wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 1 }));
+        }
+        if (bet2Ref.current.status === "active" && !autoRolled2Ref.current && bet2Ref.current.autoCashout > 0 && msg.multiplier >= bet2Ref.current.autoCashout) {
+          autoRolled2Ref.current = true;
+          wsRef.current?.send(JSON.stringify({ type: "cashout", slot: 2 }));
+        }
+      }
+
+      if (msg.type === "bet_accepted") {
+        setBalance(msg.newBalance);
+        const setBet = msg.slot === 1 ? setBet1 : setBet2;
+        setBet(b => ({ ...b, status: "queued", cashoutMultiplier: null, lastWin: null }));
+      }
+
+      if (msg.type === "cancel_accepted") {
+        setBalance(msg.newBalance);
+        const setBet = msg.slot === 1 ? setBet1 : setBet2;
+        setBet(b => ({ ...b, status: "none" }));
+      }
+
+      if (msg.type === "cashout_accepted") {
+        setBalance(msg.newBalance);
+        const setBet = msg.slot === 1 ? setBet1 : setBet2;
+        setBet(b => ({ ...b, status: "cashed", cashoutMultiplier: msg.multiplier, lastWin: msg.winAmount }));
+      }
+
+      if (msg.type === "crashed") {
+        setPhase("crashed");
+        setMultiplier(msg.crashPoint);
+        setHistory(h => [msg.crashPoint, ...h].slice(0, 20));
+        setBet1(b => b.status === "active" ? { ...b, status: "lost" } : b);
+        setBet2(b => b.status === "active" ? { ...b, status: "lost" } : b);
+      }
+    };
+
+    ws.onerror = () => setWsStatus("error");
+    ws.onclose = () => { setWsStatus("connecting"); setTimeout(connect, 3000); };
+  }, [setBalance]);
+
+  useEffect(() => {
+    connect();
+    return () => { cancelAnimationFrame(countdownRafRef.current); if (wsRef.current) wsRef.current.close(); };
+  }, [connect]);
+
+  // Countdown display derived from the server's bettingEndsAt timestamp, not
+  // counted locally — correct even on reconnect mid-phase.
   useEffect(() => {
     if (phase !== "idle") return;
-    const start = performance.now();
-    const id = setInterval(() => {
-      const remaining = Math.max(0, IDLE_MS - (performance.now() - start));
+    const tick = () => {
+      const remaining = Math.max(0, bettingEndsAtRef.current - Date.now());
       setCountdown(Math.ceil(remaining / 1000));
-      if (remaining <= 0) { clearInterval(id); startRound(); }
-    }, 100);
-    return () => clearInterval(id);
-  }, [phase, startRound]);
+      if (remaining > 0) countdownRafRef.current = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(countdownRafRef.current);
+  }, [phase]);
 
   const placeBet = (which) => {
     const bet = which === 1 ? bet1 : bet2;
-    const setBet = which === 1 ? setBet1 : setBet2;
     if (bet.status === "queued") {
-      setBalance(bal => bal + bet.stake);
-      setBet({ ...bet, status:"none" });
+      wsRef.current?.send(JSON.stringify({ type: "cancel", slot: which }));
       return;
     }
     if (bet.status !== "none" || bet.stake <= 0 || bet.stake > balance) return;
-    setBalance(bal => bal - bet.stake);
-    setBet({ ...bet, status:"queued", cashoutMultiplier:null, lastWin:null });
+    wsRef.current?.send(JSON.stringify({ type: "bet", slot: which, amount: bet.stake }));
   };
 
   const cashOut = (which) => {
     const bet = which === 1 ? bet1 : bet2;
-    const setBet = which === 1 ? setBet1 : setBet2;
     if (bet.status !== "active" || phase !== "running") return;
-    const win = bet.stake * multiplier;
-    setBalance(bal => bal + win);
-    setBet({ ...bet, status:"cashed", cashoutMultiplier:multiplier, lastWin:win });
+    wsRef.current?.send(JSON.stringify({ type: "cashout", slot: which }));
   };
 
+  // Cosmetic-only car position, driven by the current multiplier (which comes
+  // from real server ticks) — never decides any outcome, just animates
+  // smoothly between the ~10-times-a-second server updates.
   const carProgress = phase === "running" ? Math.min((multiplier - 1) / 4, 1) : 0;
   const carLeft = phase === "crashed" ? "120%" : `${5 + carProgress * 45}%`;
 
@@ -314,8 +335,15 @@ export default function RoadRushGame({ onExit }) {
             <div style={{ fontSize:13, fontWeight:900, letterSpacing:1, color:"oklch(0.82 0.16 80)" }}>RUSH</div>
           </div>
         </div>
-        <div style={{ background:"oklch(0.22 0.03 260)", borderRadius:20, padding:"6px 16px", border:"1px solid oklch(0.32 0.03 260)", fontWeight:700, fontSize:14 }}>
-          ৳{fmt(balance)}
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {wsStatus !== "connected" && (
+            <span style={{ fontSize:11, color: wsStatus === "error" ? "oklch(0.65 0.24 25)" : "oklch(0.75 0.15 80)" }}>
+              {wsStatus === "error" ? "Connection error" : "Connecting…"}
+            </span>
+          )}
+          <div style={{ background:"oklch(0.22 0.03 260)", borderRadius:20, padding:"6px 16px", border:"1px solid oklch(0.32 0.03 260)", fontWeight:700, fontSize:14 }}>
+            ৳{fmt(balance)}
+          </div>
         </div>
         {onExit && (
           <button onClick={onExit}
@@ -327,6 +355,7 @@ export default function RoadRushGame({ onExit }) {
 
       {/* History strip */}
       <div style={{ display:"flex", gap:6, padding:"8px 14px", overflowX:"auto" }}>
+        {history.length === 0 && <span style={{ fontSize:11, color:"oklch(0.6 0.02 260)" }}>No rounds yet</span>}
         {history.slice(0, 6).map((h, i) => (
           <div key={i} style={{ flexShrink:0, background:"oklch(0.22 0.03 260)", border:"1px solid oklch(0.32 0.03 260)", borderRadius:8, padding:"4px 10px", fontWeight:700, fontSize:12, color:historyColor(h) }}>
             x{fmtX(h)}
@@ -344,7 +373,7 @@ export default function RoadRushGame({ onExit }) {
 
           {/* Round id */}
           <div style={{ position:"absolute", bottom:6, left:10, fontSize:10, color:"rgba(255,255,255,0.5)" }}>
-            Round: {roundId}
+            Round: {roundId ? roundId.slice(0, 8) : "—"}
           </div>
 
           {/* Multiplier */}

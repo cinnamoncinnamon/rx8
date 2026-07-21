@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motorideCrashPoint } from "../../utils/gameEngine";
+import { getToken } from "../../api";
 import bikerImg from "./motoassets/biker.png";
 import bg1 from "./motoassets/bg1.jpg";
 import bg2 from "./motoassets/bg2.jpg";
@@ -59,7 +59,7 @@ const GAME = {
   phase: 'waiting',
   mult: 1.0,
   waitTimer: 5,
-  crashPoint: 2,
+  crashPoint: null, // now purely informational, confirmed by the server on crash — never generated locally
   startTime: null,
   bgIndex: 0,
   bgScroll: 0,
@@ -67,7 +67,7 @@ const GAME = {
   cashedOut: false,
   cashedMult: null,
   betQueued: false,
-  history: [8.42,1.23,34.1,2.05,1.01,15.6,3.3,7.7,1.88,102.4],
+  history: [], // populated from the server's real round history, not seed/placeholder data
   betAmt: 10,
   autoCashout: '',
   balance: 1000,
@@ -80,11 +80,14 @@ const GAME = {
   _raf: null,
   _engineIv: null,
   _waitIv: null,
-  _waitT: null,
   _canvas: null,
   _bgImages: [],
   _bikerImg: null,
-  _started: false,   // market loop is running
+  _started: false,   // WS connection + market loop is running
+
+  // ── Real backend connection ──────────────────────────────────────────────
+  ws: null,
+  bettingEndsAt: 0,
 };
 
 // must be after GAME is declared so tone/noise can read GAME.muted
@@ -161,112 +164,166 @@ function gameDraw() {
   }
 }
 
-function gameDoCashout(m) {
-  if (!GAME.hasBet || GAME.cashedOut) return;
+// Called from the WS handler when the server confirms a cashout — the
+// multiplier and win amount are both server-decided, never computed here.
+function gameApplyCashout(multiplier, newBalance) {
   GAME.cashedOut = true;
-  GAME.cashedMult = m;
-  const win = +(GAME.betAmt * m).toFixed(2);
-  GAME.balance = +(GAME.balance + win).toFixed(2);
-  GAME.onBalance && GAME.onBalance(b => +(b + win).toFixed(2));
+  GAME.cashedMult = multiplier;
+  GAME.balance = newBalance;
+  GAME.onBalance && GAME.onBalance(newBalance);
   SFX.cashout();
   gameNotify();
 }
 
-const genCrash = motorideCrashPoint;
-
-function gameStartWaiting() {
-  cancelAnimationFrame(GAME._raf);
-  clearInterval(GAME._engineIv);
-  clearInterval(GAME._waitIv);
-  clearTimeout(GAME._waitT);
-
-  GAME.phase      = 'waiting';
-  GAME.mult       = 1.0;
-  GAME.hasBet     = false;
-  GAME.cashedOut  = false;
-  GAME.cashedMult = null;
-  GAME.betQueued  = false;
-  GAME.waitTimer  = 5;
-  gameDraw();
-  gameNotify();
-
-  let t = 5;
-  GAME._waitIv = setInterval(() => {
-    t -= 1; GAME.waitTimer = t;
-    if (t > 0) SFX.waiting();
-    gameNotify();
-    if (t <= 0) clearInterval(GAME._waitIv);
-  }, 1000);
-  GAME._waitT = setTimeout(gameStartRound, 5000);
+// ── Real backend connection ────────────────────────────────────────────────
+// Connected once at module scope (not per-mount) so the round keeps going
+// even while the player navigates away and back, matching the existing
+// "market always keeps running" design of this file.
+function connectWS() {
+  if (GAME.ws && (GAME.ws.readyState === WebSocket.OPEN || GAME.ws.readyState === WebSocket.CONNECTING)) return;
+  const token = getToken();
+  if (!token) return;
+  const ws = new WebSocket("ws://localhost:4000/ws/motoride");
+  GAME.ws = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token }));
+  ws.onmessage = (e) => handleWSMessage(JSON.parse(e.data));
+  ws.onclose = () => { GAME.ws = null; setTimeout(connectWS, 3000); };
+  ws.onerror = () => {};
 }
 
-function gameStartRound() {
-  if (GAME.phase === 'running') return;
+function sendBet() {
+  if (!GAME.ws || GAME.ws.readyState !== WebSocket.OPEN) return;
+  GAME.ws.send(JSON.stringify({ type: "bet", slot: 1, amount: GAME.betAmt }));
+}
+function sendCashout() {
+  if (!GAME.ws || GAME.ws.readyState !== WebSocket.OPEN) return;
+  GAME.ws.send(JSON.stringify({ type: "cashout", slot: 1 }));
+}
 
+// Countdown display derived from the server's bettingEndsAt timestamp rather
+// than counted locally — correct even if this tab reconnects mid-phase.
+function startWaitCountdown() {
   clearInterval(GAME._waitIv);
-  clearTimeout(GAME._waitT);
-  clearInterval(GAME._engineIv);
+  GAME._waitIv = setInterval(() => {
+    if (GAME.phase !== 'waiting') { clearInterval(GAME._waitIv); return; }
+    const secs = Math.max(0, Math.ceil((GAME.bettingEndsAt - Date.now()) / 1000));
+    if (secs !== GAME.waitTimer) {
+      GAME.waitTimer = secs;
+      if (secs > 0) SFX.waiting();
+      gameNotify();
+    }
+  }, 200);
+}
 
-  GAME.phase      = 'running';
-  GAME.bgIndex    = Math.floor(Math.random() * BG_IMAGES.length);
-  GAME.bgScroll   = 0;
-  GAME.crashPoint = genCrash();
-  GAME.startTime  = performance.now();
-  GAME.mult       = 1.0;
-
-  if (GAME.betQueued) {
-    GAME.hasBet     = true;
-    GAME.cashedOut  = false;
-    GAME.cashedMult = null;
-    GAME.betQueued  = false;
-    GAME.balance    = +(GAME.balance - GAME.betAmt).toFixed(2);
-    GAME.onBalance && GAME.onBalance(b => +(b - GAME.betAmt).toFixed(2));
-  }
-  gameNotify();
-
-  GAME._engineIv = setInterval(() => SFX.engine(), 200);
-
-  const loop = (now) => {
+// Visual-only loop (background scroll + occasional engine rev sfx) driven by
+// GAME.mult, which the server updates ~10x/sec via "tick" messages — this
+// never decides the outcome, it just animates between real server ticks.
+function startRunVisuals() {
+  cancelAnimationFrame(GAME._raf);
+  const step = () => {
     if (GAME.phase !== 'running') return;
-
-    const elapsed = (now - GAME.startTime) / 1000;
-    const m = Math.pow(Math.E, elapsed * 0.18);
-    GAME.mult = m;
-    const speed = 1.8 + (m - 1) * 0.5;
+    const speed = 1.8 + (GAME.mult - 1) * 0.5;
     GAME.bgScroll += speed * 0.55;
     gameDraw();
-    gameNotify();
-
-    if (Math.random() < 0.04) SFX.rev(Math.min(elapsed/35, 1));
-
-    const ac = parseFloat(GAME.autoCashout);
-    if (!isNaN(ac) && ac >= 1.01 && m >= ac && GAME.hasBet && !GAME.cashedOut) {
-      gameDoCashout(m);
-    }
-
-    if (m >= GAME.crashPoint) {
-      clearInterval(GAME._engineIv);
-      SFX.crash();
-      GAME.phase = 'crashed';
-      GAME.history = [m, ...GAME.history].slice(0, 20);
-      GAME.particles = Array.from({ length: 40 }, (_, i) => ({
-        id: i + Date.now(),
-        x: 90 + 70,
-        y: (GAME._canvas?.height || 260) - 45 - 20,
-        vx: (Math.random()-0.35)*18,
-        vy: (Math.random()-1.5)*10,
-        life: 1, size: Math.random()*10+3,
-        color: ['#f97316','#fbbf24','#f59e0b','#fff','#ef4444','#fb923c'][Math.floor(Math.random()*6)]
-      }));
-      gameDraw();
-      gameNotify();
-      setTimeout(gameStartWaiting, 4000);
-      return;
-    }
-
-    GAME._raf = requestAnimationFrame(loop);
+    if (Math.random() < 0.02) SFX.rev(Math.min(GAME.mult / 35, 1));
+    GAME._raf = requestAnimationFrame(step);
   };
-  GAME._raf = requestAnimationFrame(loop);
+  GAME._raf = requestAnimationFrame(step);
+}
+
+function handleWSMessage(msg) {
+  if (msg.type === "state") {
+    GAME.phase = msg.phase === "running" ? "running" : msg.phase === "crashed" ? "crashed" : "waiting";
+    GAME.mult = msg.multiplier;
+    GAME.history = (msg.history || []).map(h => h.crashPoint);
+    if (msg.phase === "betting" && msg.bettingEndsAt) {
+      GAME.bettingEndsAt = msg.bettingEndsAt;
+      startWaitCountdown();
+    }
+    if (msg.phase === "running") startRunVisuals();
+    gameDraw(); gameNotify();
+    return;
+  }
+
+  if (msg.type === "betting_open") {
+    GAME.phase      = 'waiting';
+    GAME.mult       = 1.0;
+    GAME.hasBet     = false;
+    GAME.cashedOut  = false;
+    GAME.cashedMult = null;
+    GAME.bettingEndsAt = msg.bettingEndsAt;
+    GAME.history    = (msg.history || []).map(h => h.crashPoint);
+    GAME.bgIndex    = Math.floor(Math.random() * BG_IMAGES.length);
+    GAME.bgScroll   = 0;
+    clearInterval(GAME._engineIv);
+    cancelAnimationFrame(GAME._raf);
+
+    // A bet queued while the previous round was running fires automatically
+    // now that a real betting window is open — still a genuine server call,
+    // just deferred until it's actually legal to place it.
+    if (GAME.betQueued) {
+      GAME.betQueued = false;
+      sendBet();
+    }
+
+    startWaitCountdown();
+    gameDraw(); gameNotify();
+    return;
+  }
+
+  if (msg.type === "round_start") {
+    GAME.phase = 'running';
+    GAME._engineIv = setInterval(() => SFX.engine(), 200);
+    startRunVisuals();
+    gameNotify();
+    return;
+  }
+
+  if (msg.type === "tick") {
+    GAME.mult = msg.multiplier;
+    const ac = parseFloat(GAME.autoCashout);
+    if (!isNaN(ac) && ac >= 1.01 && GAME.mult >= ac && GAME.hasBet && !GAME.cashedOut) {
+      sendCashout();
+    }
+    gameNotify();
+    return;
+  }
+
+  if (msg.type === "bet_accepted") {
+    GAME.hasBet = true;
+    GAME.balance = msg.newBalance;
+    GAME.onBalance && GAME.onBalance(msg.newBalance);
+    SFX.bet();
+    gameNotify();
+    return;
+  }
+
+  if (msg.type === "cashout_accepted") {
+    gameApplyCashout(msg.multiplier, msg.newBalance);
+    return;
+  }
+
+  if (msg.type === "crashed") {
+    clearInterval(GAME._engineIv);
+    cancelAnimationFrame(GAME._raf);
+    SFX.crash();
+    GAME.phase = 'crashed';
+    GAME.mult = msg.crashPoint;
+    GAME.crashPoint = msg.crashPoint;
+    GAME.history = [msg.crashPoint, ...GAME.history].slice(0, 20);
+    GAME.particles = Array.from({ length: 40 }, (_, i) => ({
+      id: i + Date.now(),
+      x: 90 + 70,
+      y: (GAME._canvas?.height || 260) - 45 - 20,
+      vx: (Math.random()-0.35)*18,
+      vy: (Math.random()-1.5)*10,
+      life: 1, size: Math.random()*10+3,
+      color: ['#f97316','#fbbf24','#f59e0b','#fff','#ef4444','#fb923c'][Math.floor(Math.random()*6)]
+    }));
+    gameDraw();
+    gameNotify();
+    return;
+  }
 }
 
 // Particle ticker
@@ -315,7 +372,7 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
     SFX.resume();
     if (!GAME._started) {
       GAME._started = true;
-      gameStartWaiting();
+      connectWS();
       // dismiss loading screen after 1.5s
       setTimeout(() => setLoading(false), 1500);
     } else {
@@ -326,7 +383,7 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
       // ── FIX: on back, STOP sound but KEEP the market loop alive ──────
       SFX.suspend();               // immediately silences all AudioContext sound
       clearInterval(GAME._engineIv); // stop the repeating engine interval
-      // do NOT cancel _raf / _waitIv / _waitT — the market keeps going
+      // do NOT close the WS / cancel _raf / _waitIv — the round keeps going server-side regardless
       GAME._canvas   = null;       // no canvas to draw on while away
       GAME.onUpdate  = null;       // don't try to setState on unmounted component
       GAME.onBalance = null;
@@ -369,14 +426,15 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
     if (phase === 'crashed') return;
     if (hasBet || betQueued) return;
     if (bal < betAmt) return;
-    SFX.bet();
     if (phase === 'waiting') {
-      GAME.balance = +(bal - betAmt).toFixed(2);
-      setBalance(b => +(b - betAmt).toFixed(2));
-      GAME.hasBet = true; GAME.cashedOut = false; GAME.cashedMult = null;
+      // Balance/hasBet only update once the server confirms via bet_accepted
+      // — no optimistic local deduction, so the UI never shows money moving
+      // that the server hasn't actually moved yet.
+      sendBet();
     } else {
-      GAME.balance = +(bal - betAmt).toFixed(2);
-      setBalance(b => +(b - betAmt).toFixed(2));
+      // Running phase: nothing is sent to the server yet, so nothing is
+      // charged yet either — this just remembers to bet automatically the
+      // moment the next real betting window opens (see betting_open handler).
       GAME.betQueued = true;
     }
     forceUpdate(n => n+1);
@@ -384,13 +442,13 @@ export default function MotorideGame({ balance, setBalance, onBack }) {
 
   const cashout = () => {
     if (GAME.phase !== 'running' || !GAME.hasBet || GAME.cashedOut) return;
-    gameDoCashout(GAME.mult);
+    sendCashout();
   };
 
   const cancelQueue = () => {
+    // A queued bet was never actually sent to the server, so there's nothing
+    // to refund here — just clear the local intent.
     if (!GAME.betQueued) return;
-    GAME.balance = +(GAME.balance + GAME.betAmt).toFixed(2);
-    setBalance(b => +(b + GAME.betAmt).toFixed(2));
     GAME.betQueued = false;
     forceUpdate(n => n+1);
   };
