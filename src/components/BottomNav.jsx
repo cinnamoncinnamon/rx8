@@ -1,5 +1,6 @@
 import React from "react";
 import { G, gradient } from "../constants";
+import { sound } from "../sound/soundManager";
 
 export default function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoProfile, onGoHome, onGoActivity, onGoPromo }) {
   const navItems = [
@@ -81,6 +82,8 @@ export default function BottomNav({ activeNav, setActiveNav, onGoWallet, onGoPro
         <button
           key={n.id}
           onClick={() => {
+            sound.unlock();
+            sound.play("click");
             setActiveNav(n.id);
             if (n.id === "wallet") onGoWallet && onGoWallet();
             if (n.id === "account") onGoProfile && onGoProfile();

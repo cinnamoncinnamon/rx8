@@ -1,5 +1,6 @@
 // Central API service - all backend calls go through here
-const BASE = "http://localhost:4000";
+const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+console.log("ENV DEBUG:", import.meta.env);
 
 // Store JWT in memory (not localStorage - safer against XSS)
 let accessToken = null;
@@ -39,7 +40,15 @@ export async function apiRegister({ mobile, password, confirmPassword, name }) {
     body: JSON.stringify({ mobile, password, confirmPassword, name }),
   });
   setToken(data.accessToken);
-  return data.user;
+  return { user: data.user, recoveryCode: data.recoveryCode };
+}
+
+export async function apiForgotPassword({ mobile, recoveryCode, newPassword, confirmNewPassword }) {
+  const data = await request("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ mobile, recoveryCode, newPassword, confirmNewPassword }),
+  });
+  return data.recoveryCode; // new one-time code, shown once
 }
 
 export async function apiLogout() {
@@ -80,4 +89,44 @@ export async function apiSubmitDepositRequest({ deposit_method_id, amount, trans
 export async function apiGetDepositRequests() {
   const data = await request("/api/deposit/requests");
   return data.requests;
+}
+
+// ── Withdrawal ────────────────────────────────────────────────────────────────
+export async function apiSubmitWithdrawalRequest({ method, account_details, amount }) {
+  return request("/api/withdrawal/request", {
+    method: "POST",
+    body: JSON.stringify({ method, account_details, amount }),
+  });
+}
+
+export async function apiGetWithdrawalRequests() {
+  const data = await request("/api/withdrawal/requests");
+  return data.requests;
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export async function apiGetNotifications() {
+  const data = await request("/api/notifications");
+  return data.notifications;
+}
+
+export async function apiGetUnreadNotificationCount() {
+  const data = await request("/api/notifications/unread-count");
+  return data.count;
+}
+
+export async function apiMarkNotificationRead(id) {
+  return request(`/api/notifications/${id}/read`, { method: "POST" });
+}
+
+export async function apiMarkAllNotificationsRead() {
+  return request("/api/notifications/read-all", { method: "POST" });
+}
+
+// ── Promo Codes ─────────────────────────────────────────────────────────────
+export async function apiRedeemPromoCode(code) {
+  return request("/api/promo/redeem", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
 }

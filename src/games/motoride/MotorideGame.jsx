@@ -183,7 +183,7 @@ function connectWS() {
   if (GAME.ws && (GAME.ws.readyState === WebSocket.OPEN || GAME.ws.readyState === WebSocket.CONNECTING)) return;
   const token = getToken();
   if (!token) return;
-  const ws = new WebSocket("ws://localhost:4000/ws/motoride");
+  const ws = new WebSocket(`${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/motoride`);
   GAME.ws = ws;
   ws.onopen = () => ws.send(JSON.stringify({ type: "auth", token }));
   ws.onmessage = (e) => handleWSMessage(JSON.parse(e.data));

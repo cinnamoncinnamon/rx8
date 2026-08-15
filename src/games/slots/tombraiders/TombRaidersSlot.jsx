@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { sfx } from "./slotSounds";
+import { getToken } from "../../../api";
 import bgImg from "../../../assets/tomb-bg.jpg";
 import raiderHero from "../../../assets/raider-hero.png";
 import imgLara from "../../../assets/symbols/lara.png";
@@ -93,7 +94,7 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
   const [turbo, setTurbo] = useState(false);
   const [freeSpins, setFreeSpins] = useState(0);
   const [freeSpinsTotal, setFreeSpinsTotal] = useState(0);
-  const multiplier = currentFreeMult(freeSpinsTotal, freeSpins);
+  const [multiplier, setMultiplier] = useState(1); // now set directly from the server's response, not computed locally
   const [gamble, setGamble] = useState(null);
   const [gambleFlash, setGambleFlash] = useState(null);
   const winFlashRef = useRef(0);
@@ -232,6 +233,13 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
 
   /* ---------- Reel canvas ---------- */
   const spinStateRef = useRef({ spinning:false, cols:[], targetGrid:emptyGrid(), onDone:null });
+  // Fresh per mount, matching Golden Relics — resets free spins/gamble state
+  // on refresh, per the earlier decision to keep that behavior rather than
+  // persist indefinitely.
+  const sessionIdRef = useRef(crypto.randomUUID());
+  const SPIN_API = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/spin`;
+  const GAMBLE_RESOLVE_API = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/gamble/resolve`;
+  const GAMBLE_COLLECT_API = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/gamble/collect`;
   const reelBoxRef = useRef({ w:0,h:0,dpr:1 });
   const fxBoxRef = useRef({ w:0,h:0,dpr:1 });
 
@@ -543,17 +551,31 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
   }
 
   /* ---------- Spin ---------- */
-  const spin=useCallback(()=>{
+  const spin=useCallback(async ()=>{
     if(spinning||gamble)return;
     if(freeSpins===0&&balance<bet)return;
     setCelebration(null);setWinLines([]);
-    if(freeSpins>0){setFreeSpins(f=>f-1);}else{setBalance(b=>b-bet);}
     setSpinning(true);sfx.spinStart();spinIntensityRef.current=1;
-    const target=Array.from({length:COLS},()=>Array.from({length:ROWS},()=>({sym:pickWeighted()})));
-    const roll=Math.random();
-    if(roll<0.04){const rows=[0,1,2];const cols=[0,1,2,3,4].sort(()=>Math.random()-0.5).slice(0,3);cols.forEach(c=>{target[c][rows[Math.floor(Math.random()*3)]].sym="scat";});}
-    else if(roll<0.12){const sId=["key","map","gem"][Math.floor(Math.random()*3)];target[0][1].sym=sId;target[1][1].sym=sId;target[2][1].sym=sId;}
-    else if(roll<0.34){const sId=["torch","relic"][Math.floor(Math.random()*2)];target[0][1].sym=sId;target[1][1].sym=sId;target[2][1].sym=sId;}
+
+    let result;
+    try {
+      const r = await fetch(SPIN_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ game: "tombraiders", amount: bet, sessionId: sessionIdRef.current }),
+      });
+      result = await r.json();
+      if (!r.ok) { setSpinning(false); return; } // insufficient balance / rate-limited / etc — fail quietly, same as a no-op tap
+    } catch {
+      setSpinning(false);
+      return;
+    }
+
+    setBalance(result.balance);
+
+    // Server's grid is column-major symbol-name strings — convert to the
+    // {sym} cell shape the existing reel animation code expects.
+    const target = result.grid.map(col => col.map(sym => ({ sym })));
     const st=spinStateRef.current;
     st.targetGrid=target;
     st.cols=Array.from({length:COLS},()=>({offset:0,vel:22+Math.random()*6,strip:Array.from({length:24},()=>pickWeighted()),stopAt:0,stopped:false}));
@@ -575,13 +597,16 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
     });
     setTimeout(()=>{
       st.spinning=false;spinIntensityRef.current=0.25;setGrid(target);
-      const ev=evaluate(target);
-      const activeMult=currentFreeMult(freeSpinsTotal,Math.max(0,freeSpins-(freeSpins>0?1:0)));
-      const lineWin=ev.lines.length?Math.max(1,Math.floor(ev.totalMult*bet*activeMult*HOUSE_EDGE)):0;
-      const jackpotWin=ev.jackpot?Math.floor(JACKPOTS[ev.jackpot]*bet):0;
-      const totalWin=lineWin+jackpotWin;
+
+      setMultiplier(result.multiplier);
+      setFreeSpins(result.freeSpinsRemaining);
+      if (result.freeSpinsAwarded > 0) setFreeSpinsTotal(t => t + result.freeSpinsAwarded);
+
+      const lineWin=result.lineWin, jackpotWin=result.jackpotWin, totalWin=result.totalWin;
+      const ev = { lines: result.lines, jackpot: result.jackpot, scatters: result.scatters };
+
       if(totalWin>0){
-        setWinLines(ev.lines);setWin(totalWin);setBalance(b=>b+totalWin);
+        setWinLines(ev.lines);setWin(totalWin);
         const ratio=totalWin/bet;
         let label=null;
         if(ev.jackpot)label={label:`${ev.jackpot.toUpperCase()} JACKPOT`,amount:jackpotWin,tier:ev.jackpot};
@@ -616,15 +641,14 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
         } else {
           const fxBox=fxBoxRef.current;burstCoins(fxBox.w/2,Math.min(fxBox.h*0.5,window.innerHeight*0.52),20);
         }
-        if(!ev.jackpot&&freeSpins===0){
-          const offerAmt=totalWin;setGamble({amount:offerAmt,round:0});
+        if(result.gambleAvailable){
+          setGamble({amount:result.gambleAmount,round:0});
           setTimeout(()=>{setGamble(g=>(g&&g.round===0?null:g));},5000);
         }
       }
       if(ev.scatters>=3){
-        const isRetrigger=freeSpins>0||freeSpinsTotal>0;
-        const fs=isRetrigger?FREE_SPINS_RETRIGGER:(FREE_SPINS_AWARD[ev.scatters]||10);
-        setFreeSpins(f=>f+fs);setFreeSpinsTotal(t=>t+fs);
+        const fs=result.freeSpinsAwarded;
+        const isRetrigger=result.usingFreeSpin;
         setCelebration({label:isRetrigger?`+${fs} FREE SPINS!`:`${fs} FREE SPINS!`,tier:"free"});
         sfx.freeSpins();
         const fxBox=fxBoxRef.current;const cx=fxBox.w/2,cy=Math.min(fxBox.h*0.5,window.innerHeight*0.52);
@@ -634,7 +658,7 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
       }
       setSpinning(false);
     },baseDur+COLS*stagger+200);
-  },[spinning,balance,bet,turbo,freeSpins,freeSpinsTotal,gamble]);
+  },[spinning,balance,bet,turbo,freeSpins,gamble]);
 
   /* Auto spin */
   useEffect(()=>{
@@ -645,22 +669,40 @@ export default function TombRaidersSlot({ balance, setBalance, onBack }) {
 
   useEffect(()=>{if(freeSpins===0)setFreeSpinsTotal(0);},[freeSpins]);
 
-  const resolveGamble=useCallback((pick)=>{
+  const resolveGamble=useCallback(async (pick)=>{
     if(!gamble)return;sfx.gamblePick();
-    const result=Math.random()<0.5?"red":"black";const wonRound=pick===result;
-    if(wonRound){
-      const doubled=gamble.amount*2,delta=doubled-gamble.amount;
-      setBalance(b=>b+delta);setWin(doubled);setGambleFlash("win");sfx.gambleWin();
-      const nextRound=gamble.round+1;
-      if(nextRound>=GAMBLE_MAX_ROUNDS){setTimeout(()=>{setGamble(null);setGambleFlash(null);},900);}
-      else setTimeout(()=>{setGamble({amount:doubled,round:nextRound});setGambleFlash(null);},700);
+    let result;
+    try {
+      const r = await fetch(GAMBLE_RESOLVE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ game: "tombraiders", sessionId: sessionIdRef.current, pick }),
+      });
+      result = await r.json();
+      if (!r.ok) return; // e.g. "no gamble in progress" if state somehow desynced — fail quietly
+    } catch {
+      return;
+    }
+
+    setBalance(result.balance);
+    if(result.won){
+      setWin(result.amount);setGambleFlash("win");sfx.gambleWin();
+      if(result.maxedOut){setTimeout(()=>{setGamble(null);setGambleFlash(null);},900);}
+      else setTimeout(()=>{setGamble({amount:result.amount,round:result.round});setGambleFlash(null);},700);
     } else {
-      setBalance(b=>b-gamble.amount);setWin(0);setGambleFlash("lose");sfx.gambleLose();
+      setWin(0);setGambleFlash("lose");sfx.gambleLose();
       setTimeout(()=>{setGamble(null);setGambleFlash(null);},1000);
     }
   },[gamble]);
 
-  const collectGamble=useCallback(()=>{sfx.coin();setGamble(null);setGambleFlash(null);},[]);
+  const collectGamble=useCallback(()=>{
+    sfx.coin();setGamble(null);setGambleFlash(null);
+    fetch(GAMBLE_COLLECT_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+      body: JSON.stringify({ game: "tombraiders", sessionId: sessionIdRef.current }),
+    }).catch(() => {}); // purely clears server-side pending state; the amount was already credited as a normal win
+  },[]);
 
   function adjBet(d){
     sfx.betChange();

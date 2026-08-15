@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { G, CSS, gradient } from "../constants";
+import { sound } from "../sound/soundManager";
 
 function censorContact(c) {
   if (!c) return "Not set";
@@ -43,6 +44,21 @@ export default function SettingsScreen({ user, onBack, onGoSecurity }) {
     navigator.clipboard?.writeText(uid);
   };
 
+  const [muted, setMutedState] = useState(sound.isMuted());
+  const [volume, setVolumeState] = useState(sound.getVolume());
+
+  const handleToggleMute = () => {
+    const next = sound.toggleMute();
+    setMutedState(next);
+    if (!next) sound.play("click");
+  };
+
+  const handleVolumeChange = (e) => {
+    const v = Number(e.target.value) / 100;
+    sound.setVolume(v);
+    setVolumeState(v);
+  };
+
   return (
     <div style={{ maxWidth:480, margin:"0 auto", background:"#F4F4F8", minHeight:"100vh", fontFamily:"'Poppins',sans-serif", paddingBottom:40 }}>
       <style>{CSS}</style>
@@ -75,6 +91,46 @@ export default function SettingsScreen({ user, onBack, onGoSecurity }) {
               <span onClick={(e) => { e.stopPropagation(); copyUid(); }} style={{ cursor:"pointer", fontSize:12, color:"#EF5350" }}>⧉</span>
             </span>
           } last />
+        </div>
+
+        {/* Sound preferences */}
+        <div>
+          <div style={{ fontWeight:800, fontSize:14, color:G.text, margin:"4px 0 10px", display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ width:4, height:16, background:"#EF5350", borderRadius:2, display:"inline-block" }} />
+            Sound
+          </div>
+          <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 2px 8px #0001", overflow:"hidden", padding:"16px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:"#FFF0F0", display:"flex", alignItems:"center", justifyContent:"center", fontSize:17, flexShrink:0 }}>
+                  {muted ? "🔇" : "🔊"}
+                </div>
+                <span style={{ fontSize:14, color:G.text, fontWeight:600 }}>Game sound</span>
+              </div>
+              <div
+                onClick={handleToggleMute}
+                style={{
+                  width:44, height:26, borderRadius:13, cursor:"pointer",
+                  background: muted ? "#e0e0e6" : gradient,
+                  position:"relative", transition:"background 0.15s",
+                }}
+              >
+                <div style={{
+                  position:"absolute", top:2, left: muted ? 2 : 20,
+                  width:22, height:22, borderRadius:"50%", background:"#fff",
+                  boxShadow:"0 1px 4px #0003", transition:"left 0.15s",
+                }} />
+              </div>
+            </div>
+            <div style={{ marginTop:14, opacity: muted ? 0.4 : 1, pointerEvents: muted ? "none" : "auto" }}>
+              <div style={{ fontSize:12, color:G.sub, marginBottom:6 }}>Volume</div>
+              <input
+                type="range" min="0" max="100" value={Math.round(volume * 100)}
+                onChange={handleVolumeChange}
+                style={{ width:"100%", accentColor:"#EF5350" }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Security information */}

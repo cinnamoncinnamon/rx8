@@ -7,7 +7,7 @@ import cloudsImg from "./assets/clouds.png";
 import foregroundImg from "./assets/foreground.png";
 import carImg from "./assets/car.png";
 
-const WS_URL = "ws://localhost:4000/ws/roadrush";
+const WS_URL = `${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/roadrush`;
 const GROWTH_RATE_COSMETIC = 0.00011; // mirrors the server's rate purely for the car's progress animation between ticks — never decides any outcome
 
 function fmt(n) {

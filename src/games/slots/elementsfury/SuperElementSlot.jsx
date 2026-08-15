@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./SuperElementSlot.css";
 import { slotPickSymbol } from "../../../utils/gameEngine";
+import { getToken } from "../../../api";
 import water from "../../../assets/elements/sym-water.png";
 import fire from "../../../assets/elements/sym-fire.png";
 import lightning from "../../../assets/elements/sym-lightning.png";
@@ -8,17 +9,25 @@ import wind from "../../../assets/elements/sym-wind.png";
 import scatter from "../../../assets/elements/sym-scatter.png";
 
 const SYMBOLS = [
-  { id: "water",    name: "Water",     img: water,     payout: 0.3,  weight: 30   },
-  { id: "fire",     name: "Fire",      img: fire,      payout: 0.5,  weight: 28   },
-  { id: "lightning",name: "Lightning", img: lightning, payout: 0.8,  weight: 24   },
-  { id: "wind",     name: "Wind",      img: wind,      payout: 0.4,  weight: 28   },
+  { id: "water",    name: "Water",     img: water,     payout: 0.65, weight: 30   },
+  { id: "fire",     name: "Fire",      img: fire,      payout: 1.09, weight: 28   },
+  { id: "lightning",name: "Lightning", img: lightning, payout: 1.74, weight: 24   },
+  { id: "wind",     name: "Wind",      img: wind,      payout: 0.87, weight: 28   },
   { id: "scatter",  name: "Scatter",   img: scatter,   payout: 1,    weight: 0.35, scatter: true },
 ];
+// Payout values above are cosmetic-only now (used for local win-cell
+// highlighting, matching the server's real ElementsFuryEngine.js pay
+// table) — actual money always comes from the server's response.
+
+const BY_ID = Object.fromEntries(SYMBOLS.map((s) => [s.id, s]));
 
 const REELS = 5;
 const ROWS  = 5;
 
-const _SE_WEIGHTED = SYMBOLS.flatMap(s => Array(Math.round(s.weight)).fill(s));
+// Cosmetic-only pool (idle grid + spin-blur filler, never used for money).
+// Same fix as the backend: scale by 100 before rounding so the scatter's
+// fractional weight (0.35) doesn't vanish to zero copies.
+const _SE_WEIGHTED = SYMBOLS.flatMap(s => Array(Math.round(s.weight * 100)).fill(s));
 
 function pick() {
   return slotPickSymbol(_SE_WEIGHTED);
@@ -68,6 +77,12 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
     ),
   );
 
+  // Fresh per mount, matching Golden Relics/Tomb Raiders — resets free
+  // spins state on refresh, per the earlier decision to keep that behavior.
+  const sessionIdRef = useRef(crypto.randomUUID());
+  const SPIN_API = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/spin`;
+  const BUY_FEATURE_API = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/elements-fury/buy-feature`;
+
   useLayoutEffect(() => {
     const el = measureRef.current;
     if (!el) return;
@@ -83,15 +98,39 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
 
   const totalBet = +(bet * (extraBet ? 1.5 : 1)).toFixed(2);
   const GAP      = 4;
-  const BUY_COST = +(totalBet * 60).toFixed(2);
+  const BUY_COST = +(totalBet * 10).toFixed(2);
+  // Backend only accepts whole-number bets right now — Extra Bet's 1.5x can
+  // produce a fraction (e.g. bet=5 -> 7.5). Rounding here as a stopgap so
+  // spins never get rejected; flagging that this can differ from the
+  // displayed totalBet by up to ~0.5 until fractional bets are supported
+  // server-side.
+  const apiBet = Math.round(totalBet);
 
-  function spin() {
+  async function spin() {
     if (spinningRef.current) return;
     const isFree = freeSpins > 0;
     if (!isFree && balance < totalBet) return;
 
     spinningRef.current = true;
     setSpinning(true);
+
+    // Fetch the real result FIRST, then animate the reels to land on it —
+    // same pattern as Tomb Raiders/Golden Relics. The server decides the
+    // outcome before any animation starts; the client only displays it.
+    let result;
+    try {
+      const r = await fetch(SPIN_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ game: "elementsfury", amount: apiBet, sessionId: sessionIdRef.current }),
+      });
+      result = await r.json();
+      if (!r.ok) { spinningRef.current = false; setSpinning(false); return; }
+    } catch {
+      spinningRef.current = false;
+      setSpinning(false);
+      return;
+    }
 
     const startStopped = Array(REELS).fill(false);
     colStoppedRef.current = startStopped;
@@ -105,18 +144,14 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
     colTimeoutsRef.current.forEach((t) => window.clearTimeout(t));
     colTimeoutsRef.current = [];
 
-    if (!isFree) {
-      setBalance((b) => +(b - totalBet).toFixed(2));
-    } else {
-      setFreeSpins((n) => n - 1);
-    }
-
     setWin(0);
     setWinCells(new Set());
     setScatterCells(new Set());
     setBigWin(null);
 
-    const next = newGrid();
+    // Server's grid is column-major {id} objects — map to the full SYMBOLS
+    // entry (image, cosmetic payout, etc.) the reel rendering expects.
+    const next = result.grid.map((col) => col.map((cell) => BY_ID[cell.id]));
     const strips = Array.from({ length: REELS }, (_, c) => {
       const filler = Array.from({ length: STRIP_LEN - ROWS }, () => pick());
       return [...filler, ...next[c]];
@@ -150,12 +185,43 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
       spinIntervalRef.current = null;
       setGrid(next);
       setSpinning(false);
-      resolve(next);
+      applyResult(next, result);
     }, spinTime);
   }
 
-  function resolve(g) {
-    let totalWin = 0;
+  // Applies the server's authoritative result once the reel animation lands.
+  // Balance, win amount, free spins, and multipliers all come straight from
+  // the response — nothing here computes money. cosmeticWinCells() below is
+  // purely a local recompute for the highlight overlay, using the same
+  // "ways" logic as the server, run against the server's own final grid —
+  // it will always agree with reality, it just isn't the source of truth.
+  function applyResult(g, result) {
+    const { winning, scatters } = cosmeticWinCells(g);
+
+    setMultiplier(result.streakMultiplier ?? 1);
+    setFreeSpinMult(result.freeSpinMult ?? 1);
+    setFreeSpins(result.freeSpinsRemaining ?? 0);
+    setWinCells(winning);
+    setScatterCells(result.scatterCount >= 3 ? scatters : new Set());
+    setWin(result.winTotal || 0);
+    setBalance(result.balance);
+
+    if (result.winTotal > 0) {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 500);
+      if (result.winTotal >= bet * 100) {
+        setBigWin(result.winTotal);
+        setShake(true);
+        setTimeout(() => setShake(false), 1000);
+      }
+    }
+    spinningRef.current = false;
+  }
+
+  // Cosmetic-only: recomputes which cells formed a "ways" win, purely to
+  // drive the highlight/glow overlay. Does not affect balance or win
+  // amount in any way — those always come from the server response above.
+  function cosmeticWinCells(g) {
     const winning  = new Set();
     const scatters = new Set();
 
@@ -165,55 +231,24 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
         col.map((s, r) => (s.id === sym.id ? r : -1)).filter((r) => r >= 0),
       );
       let prefixLen = 0;
-      let ways      = 1;
       for (let c = 0; c < REELS; c++) {
         if (positions[c].length === 0) break;
-        ways *= positions[c].length;
         prefixLen++;
       }
       if (prefixLen >= 5) {
-        const amount = sym.payout * ways * bet * 0.02;
-        totalWin += amount;
         for (let c = 0; c < prefixLen; c++) {
           for (const r of positions[c]) winning.add(`${c}-${r}`);
         }
       }
     }
 
-    let scatterCount = 0;
     g.forEach((col, c) =>
       col.forEach((s, r) => {
-        if (s.scatter) { scatterCount++; scatters.add(`${c}-${r}`); }
+        if (s.scatter) scatters.add(`${c}-${r}`);
       }),
     );
-    if (scatterCount >= 3) {
-      totalWin += scatterCount * 1 * bet;
-      setFreeSpins((n) => n + (scatterCount >= 5 ? 15 : scatterCount === 4 ? 10 : 6));
-      setFreeSpinMult((m) => Math.min(10, m + 1));
-    } else {
-      scatters.clear();
-    }
 
-    const mult     = totalWin > 0 ? Math.min(5, multiplier + 1) : 1;
-    const fsBonus  = freeSpins > 0 ? freeSpinMult : 1;
-    const finalWin = +(totalWin * mult * fsBonus).toFixed(2);
-
-    setMultiplier(mult);
-    setWinCells(winning);
-    setScatterCells(scatters);
-    setWin(finalWin);
-
-    if (finalWin > 0) {
-      setBalance((b) => +(b + finalWin).toFixed(2));
-      setFlash(true);
-      setTimeout(() => setFlash(false), 500);
-      if (finalWin >= bet * 100) {
-        setBigWin(finalWin);
-        setShake(true);
-        setTimeout(() => setShake(false), 1000);
-      }
-    }
-    spinningRef.current = false;
+    return { winning, scatters };
   }
 
   useEffect(() => {
@@ -269,12 +304,27 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
     setAutoSpins((n) => (n > 0 ? 0 : 10));
   }
 
-  function buyFeature() {
+  async function buyFeature() {
     if (spinningRef.current || balance < BUY_COST) return;
-    setBalance((b) => +(b - BUY_COST).toFixed(2));
-    setFreeSpins(8);
-    setFreeSpinMult(2);
     setShowBuy(false);
+
+    let result;
+    try {
+      const r = await fetch(BUY_FEATURE_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ bet: apiBet, sessionId: sessionIdRef.current }),
+      });
+      result = await r.json();
+      if (!r.ok) return; // insufficient balance / already in free spins / etc — fail quietly, same as other spin failures
+    } catch {
+      return;
+    }
+
+    setBalance(result.balance);
+    setFreeSpins(result.freeSpinsRemaining);
+    setFreeSpinMult(1); // starts at 1x, same as a natural trigger — grows via retriggers from there
+    setMultiplier(1);
   }
 
   return (
@@ -431,7 +481,7 @@ export default function SuperElementSlot({ balance, setBalance, onBack }) {
         <div onClick={() => setShowBuy(false)} style={{ position:"fixed", inset:0, zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", padding:16 }}>
           <div onClick={(e) => e.stopPropagation()} className="se-frame" style={{ borderRadius:16, padding:20, maxWidth:300, width:"100%", textAlign:"center" }}>
             <div style={{ color:"#fcd34d", fontWeight:900, fontSize:20, marginBottom:4 }}>BUY FEATURE</div>
-            <div style={{ color:"rgba(254,243,199,0.8)", fontSize:12, marginBottom:12 }}>8 Free Spins · ×2 multiplier</div>
+            <div style={{ color:"rgba(254,243,199,0.8)", fontSize:12, marginBottom:12 }}>10 Free Spins</div>
             <div style={{ color:"#fde68a", fontSize:14, marginBottom:16 }}>Cost: <span style={{ fontWeight:900, color:"#fcd34d" }}>৳{BUY_COST}</span></div>
             <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
               <button onClick={() => setShowBuy(false)} style={{ padding:"8px 16px", borderRadius:999, background:"rgba(0,0,0,0.4)", border:"1px solid rgba(251,191,36,0.4)", color:"#fef3c7", fontSize:14, fontWeight:700, cursor:"pointer" }}>Cancel</button>

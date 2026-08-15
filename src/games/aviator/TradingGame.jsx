@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback } from "react"
-;/* ── TRADING SIMULATOR ── */
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { getToken, apiGetBalance } from "../../api";
+/* ── TRADING — server-authoritative (backend games/FXTraderServer.js runs
+   the real price feed, round clock, and outcome decision; this file only
+   renders what the server sends and forwards bets over the socket) ── */
 const CANDLE_DURATION = 30;
 const ENTRY_WINDOW    = 10;
+const WS_URL = `${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/fxtrader`;
 
 const TRADE_MARKETS = [
-  { id:"USDJPY", label:"USD/JPY", base:154.5,  vol:0.00035, decimals:2, prefix:"" },
-  { id:"EURUSD", label:"EUR/USD", base:1.0845,  vol:0.00018, decimals:4, prefix:"" },
-  { id:"GBPUSD", label:"GBP/USD", base:1.2710,  vol:0.00022, decimals:4, prefix:"" },
-  { id:"XAUUSD", label:"XAU/USD", base:2345.0,  vol:0.00025, decimals:1, prefix:"$" },
-  { id:"BTCUSD", label:"BTC/USD", base:43250.0, vol:0.0013,  decimals:2, prefix:"$" },
+  { id:"USDJPY", backendId:"fx_usdjpy", label:"USD/JPY", decimals:2, prefix:"" },
+  { id:"EURUSD", backendId:"fx_eurusd", label:"EUR/USD", decimals:4, prefix:"" },
+  { id:"GBPUSD", backendId:"fx_gbpusd", label:"GBP/USD", decimals:4, prefix:"" },
+  { id:"XAUUSD", backendId:"fx_xauusd", label:"XAU/USD", decimals:1, prefix:"$" },
+  { id:"BTCUSD", backendId:"fx_btcusd", label:"BTC/USD", decimals:2, prefix:"$" },
 ];
+const marketByBackendId = Object.fromEntries(TRADE_MARKETS.map(m => [m.backendId, m]));
 
 const AudioEngine = (() => {
   let ctx = null;
@@ -39,81 +44,122 @@ const AudioEngine = (() => {
     win:     function() { tone(660,"sine",0.15,0.14); tone(880,"sine",0.15,0.12,0.1); tone(1100,"sine",0.20,0.10,0.2); tone(1320,"sine",0.18,0.08,0.35); },
     loss:    function() { tone(330,"sine",0.15,0.14); tone(220,"sine",0.15,0.12,0.12); tone(165,"triangle",0.18,0.10,0.25); },
     uiClick: function() { tone(800,"sine",0.05,0.07); },
+    reveal:  function() { tone(523,"sine",0.12,0.12); tone(659,"sine",0.12,0.12,0.1); tone(784,"sine",0.12,0.12,0.2); tone(1047,"sine",0.25,0.14,0.3); },
   };
 })();
 
-const GlobalMarkets = (function() {
+const FXSocket = (function() {
   const stores = {};
-  const intervals = { price: null, timer: null };
   const listeners = [];
-  let initialized = false;
+  const resultListeners = [];
+  const betResponseListeners = [];
+  let ws = null;
+  let authed = false;
 
-  function seedMarket(m) {
-    let p = m.base * (0.99 + Math.random() * 0.02);
-    const candles = [];
-    for (let i = 0; i < 80; i++) {
-      const move = (Math.random() - 0.5) * 2 * p * m.vol * 0.8;
-      const o = p, c = p + move;
-      const hi = Math.max(o, c) + Math.abs(move) * Math.random() * 0.4;
-      const lo = Math.min(o, c) - Math.abs(move) * Math.random() * 0.4;
-      candles.push({ o, c, hi, lo, closed: true });
-      p = c;
-    }
-    candles.push({ o: p, c: p, hi: p, lo: p, closed: false });
-    stores[m.id] = { candles, live: p, openRef: p, timeLeft: CANDLE_DURATION, resolved: false };
-  }
+  TRADE_MARKETS.forEach(function(m) {
+    stores[m.id] = {
+      candles: [], live: 0, openRef: 0, timeLeft: CANDLE_DURATION, resolved: false,
+    };
+  });
 
   function notify() { listeners.forEach(function(fn) { fn(); }); }
 
-  function init() {
-    if (initialized) return;
-    initialized = true;
-    TRADE_MARKETS.forEach(function(m) { seedMarket(m); });
+  function connect(token) {
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    ws = new WebSocket(WS_URL);
 
-    intervals.price = setInterval(function() {
-      TRADE_MARKETS.forEach(function(m) {
-        const s    = stores[m.id];
-        const prev = s.live;
-        const rev  = (m.base - prev) / m.base * 0.0002;
-        const move = (Math.random() - 0.488 + rev) * prev * m.vol * 0.18;
-        const next = Math.max(prev + move, m.base * 0.5);
-        s.live = next;
-        const last = s.candles[s.candles.length - 1];
-        if (last) { last.c = next; last.hi = Math.max(last.hi, next); last.lo = Math.min(last.lo, next); }
-      });
-      notify();
-    }, 280);
+    ws.onopen = function() {
+      ws.send(JSON.stringify({ type: "auth", token: token }));
+    };
 
-    intervals.timer = setInterval(function() {
-      TRADE_MARKETS.forEach(function(m) {
-        const s = stores[m.id];
-        s.timeLeft--;
-        if (s.timeLeft <= 0) {
-          const last = s.candles[s.candles.length - 1];
-          if (last) last.closed = true;
-          const cl = s.live;
-          s.candles.push({ o: cl, c: cl, hi: cl, lo: cl, closed: false });
-          if (s.candles.length > 120) s.candles.shift();
-          s.openRef  = cl;
-          s.timeLeft = CANDLE_DURATION;
-          s.resolved = false;
-        }
-      });
-      notify();
-    }, 1000);
-  }
+    ws.onmessage = function(evt) {
+      let msg;
+      try { msg = JSON.parse(evt.data); } catch (e) { return; }
 
-  function getStore(id) { return stores[id]; }
+      if (msg.type === "auth_ok") {
+        authed = true;
+        (msg.markets || []).forEach(function(snap) {
+          const m = marketByBackendId[snap.marketId];
+          if (!m) return;
+          stores[m.id] = {
+            candles: snap.candles, live: snap.live, openRef: snap.openRef,
+            timeLeft: snap.timeLeft, resolved: false,
+          };
+        });
+        notify();
+        return;
+      }
 
-  function subscribe(fn) {
-    listeners.push(fn);
-    return function() {
-      const i = listeners.indexOf(fn);
-      if (i !== -1) listeners.splice(i, 1);
+      if (msg.type === "price") {
+        const m = marketByBackendId[msg.marketId]; if (!m) return;
+        const s = stores[m.id]; if (!s) return;
+        s.live = msg.price;
+        const live = s.candles[s.candles.length - 1];
+        if (live) { live.c = msg.price; live.hi = Math.max(live.hi, msg.price); live.lo = Math.min(live.lo, msg.price); }
+        notify();
+        return;
+      }
+
+      if (msg.type === "tick") {
+        const m = marketByBackendId[msg.marketId]; if (!m) return;
+        const s = stores[m.id]; if (!s) return;
+        s.timeLeft = msg.timeLeft;
+        notify();
+        return;
+      }
+
+      if (msg.type === "new_round") {
+        const m = marketByBackendId[msg.marketId]; if (!m) return;
+        const s = stores[m.id]; if (!s) return;
+        if (s.candles.length) s.candles[s.candles.length - 1].closed = true;
+        s.openRef = msg.openRef;
+        s.timeLeft = msg.timeLeft;
+        s.candles.push({ o: msg.openRef, c: msg.openRef, hi: msg.openRef, lo: msg.openRef, closed: false });
+        if (s.candles.length > 120) s.candles.shift();
+        notify();
+        return;
+      }
+
+      if (msg.type === "result") {
+        resultListeners.forEach(function(fn) { fn(msg); });
+        return;
+      }
+
+      if (msg.type === "bet_accepted" || msg.type === "error") {
+        betResponseListeners.forEach(function(fn) { fn(msg); });
+        return;
+      }
+    };
+
+    ws.onclose = function() {
+      authed = false;
+      setTimeout(function() { connect(token); }, 2000);
     };
   }
 
-  return { init, getStore, subscribe };
+  function getStore(id) { return stores[id]; }
+  function isAuthed() { return authed; }
+
+  function placeBet(backendMarketId, dir, amount) {
+    if (!ws || ws.readyState !== 1) return false;
+    ws.send(JSON.stringify({ type: "bet", marketId: backendMarketId, dir: dir, amount: amount }));
+    return true;
+  }
+
+  function subscribe(fn) {
+    listeners.push(fn);
+    return function() { const i = listeners.indexOf(fn); if (i !== -1) listeners.splice(i, 1); };
+  }
+  function onResult(fn) {
+    resultListeners.push(fn);
+    return function() { const i = resultListeners.indexOf(fn); if (i !== -1) resultListeners.splice(i, 1); };
+  }
+  function onBetResponse(fn) {
+    betResponseListeners.push(fn);
+    return function() { const i = betResponseListeners.indexOf(fn); if (i !== -1) betResponseListeners.splice(i, 1); };
+  }
+
+  return { connect, getStore, isAuthed, placeBet, subscribe, onResult, onBetResponse };
 })();
 
 function TradingLoader({ onDone }) {
@@ -457,36 +503,51 @@ export default function TradingGame({ balance, setBalance, onBack }) {
   const tradeSeq        = useRef(0);
   const soundRef        = useRef(true);
   const marketIdxRef    = useRef(0);
-  const resolvedRef     = useRef(false);
   const pnlCanvasRef    = useRef(null);
 
   const storeRef = useRef(null);
-  storeRef.current = GlobalMarkets.getStore(market.id) || { candles:[], live:0, openRef:0 };
+  storeRef.current = FXSocket.getStore(market.id) || { candles:[], live:0, openRef:0 };
 
   useEffect(function(){ activeTradesRef.current = activeTrades; }, [activeTrades]);
   useEffect(function(){ soundRef.current = soundOn; }, [soundOn]);
   useEffect(function(){ marketIdxRef.current = marketIdx; }, [marketIdx]);
 
+  // Connect to the real FX Trader server once, on mount. The server owns
+  // price, the round clock, and the outcome — this effect just wires up
+  // listeners for what it broadcasts.
   useEffect(function() {
-    GlobalMarkets.init();
-    const unsub = GlobalMarkets.subscribe(function() {
+    const token = getToken();
+    if (token) FXSocket.connect(token);
+
+    const unsubStore = FXSocket.subscribe(function() {
       const idx = marketIdxRef.current;
       const m   = TRADE_MARKETS[idx];
-      const s   = GlobalMarkets.getStore(m.id);
+      const s   = FXSocket.getStore(m.id);
       if (!s) return;
       setLivePrice(s.live);
       setOpenRef(s.openRef);
       setTimeLeft(s.timeLeft);
-
-      if (s.timeLeft === CANDLE_DURATION && !resolvedRef.current && activeTradesRef.current.length > 0) {
-        resolvedRef.current = true;
-        resolveTrades(s, m);
-        setTimeout(function() { resolvedRef.current = false; }, 500);
-      }
     });
-    const s0 = GlobalMarkets.getStore(TRADE_MARKETS[0].id);
-    if (s0) { setLivePrice(s0.live); setOpenRef(s0.openRef); setTimeLeft(s0.timeLeft); }
-    return unsub;
+
+    const unsubResult = FXSocket.onResult(function(msg) {
+      const m = marketByBackendId[msg.marketId];
+      if (m) handleServerResult(msg, m);
+    });
+
+    const unsubBet = FXSocket.onBetResponse(function(msg) {
+      if (msg.type === "error") return; // rejected — nothing was added optimistically, nothing to undo
+      // bet_accepted — the server is the source of truth for entry price and
+      // balance, so the confirmed trade is added now, not before the server
+      // actually accepted it.
+      const m = marketByBackendId[msg.marketId];
+      if (!m) return;
+      const id = ++tradeSeq.current;
+      const trade = { id: id, dir: msg.dir, entry: msg.entryPrice, amt: msg.amount, marketId: msg.marketId };
+      setActiveTrades(function(p) { return p.concat([trade]); });
+      setBalance(msg.newBalance);
+    });
+
+    return function() { unsubStore(); unsubResult(); unsubBet(); };
   }, []); // eslint-disable-line
 
   const sound = useCallback(function(name) {
@@ -494,21 +555,19 @@ export default function TradingGame({ balance, setBalance, onBack }) {
     if (AudioEngine[name]) AudioEngine[name]();
   }, []);
 
-  function resolveTrades(s, m) {
-    const trades = activeTradesRef.current;
-    if (!trades.length) return;
-    const closePrice = s.live;
-    const openPrice  = s.openRef;
-    const outcomeUp  = closePrice >= openPrice;
-    const mLabel     = m.label;
-    const now        = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-    const resolved   = [];
+  function handleServerResult(msg, m) {
+    // Server already decided win/loss and already credited any winnings —
+    // this only updates the local display (history, stats, the result
+    // modal), it never mutates the wallet itself.
+    const myTrades = activeTradesRef.current.filter(function(t) { return t.marketId === msg.marketId; });
+    if (!myTrades.length) return;
 
-    trades.forEach(function(t) {
-      const won = (t.dir==="UP") === outcomeUp;
-      const pnl = won ? t.amt * 0.92 : -t.amt;
-      setBalance(function(b){ return Math.max(0, b + pnl); });
-      resolved.push({ id:t.id, dir:t.dir, entry:t.entry, amt:t.amt, won, pnl, close:closePrice, market:mLabel, time:now });
+    const outcomeUp = msg.outcome === "UP";
+    const now = new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+    const resolved = myTrades.map(function(t) {
+      const won = (t.dir === "UP") === outcomeUp;
+      const pnl = won ? t.amt * 0.92 : -t.amt; // net gain/loss relative to the stake, matches the server's payout rate
+      return { id:t.id, dir:t.dir, entry:t.entry, amt:t.amt, won:won, pnl:pnl, close:msg.close, market:m.label, time:now };
     });
 
     setStats(function(prev) {
@@ -521,22 +580,24 @@ export default function TradingGame({ balance, setBalance, onBack }) {
     });
 
     setTradeHistory(function(h){ return resolved.concat(h).slice(0,100); });
-    setActiveTrades([]);
-    activeTradesRef.current = [];
+    setActiveTrades(function(p) { return p.filter(function(t) { return t.marketId !== msg.marketId; }); });
+
+    // Refresh the real balance from the server instead of computing it
+    // locally — the server is what actually credited the winnings.
+    apiGetBalance().then(function(b) { setBalance(b); }).catch(function(){});
 
     const anyWon = resolved.some(function(r){return r.won;});
     const totPnl = resolved.reduce(function(acc,r){return acc+r.pnl;},0);
-    setResultInfo({ won:anyWon, pnl:totPnl, close:closePrice, allWon:resolved.every(function(r){return r.won;}) });
+    setResultInfo({ won:anyWon, pnl:totPnl, close:msg.close, allWon:resolved.every(function(r){return r.won;}) });
     if (soundRef.current) { if (anyWon) AudioEngine.win(); else AudioEngine.loss(); }
     setTimeout(function(){ setResultInfo(null); }, 4200);
   }
 
-  // ── ONLY ONE switchMarket — just changes view, markets keep running ──
   const switchMarket = useCallback(function(idx) {
     if (soundRef.current) AudioEngine.uiClick();
     setMarketIdx(idx);
     marketIdxRef.current = idx;
-    const s = GlobalMarkets.getStore(TRADE_MARKETS[idx].id);
+    const s = FXSocket.getStore(TRADE_MARKETS[idx].id);
     if (s) { setLivePrice(s.live); setOpenRef(s.openRef); setTimeLeft(s.timeLeft); }
     setChartOffset(0);
   }, []);
@@ -545,14 +606,12 @@ export default function TradingGame({ balance, setBalance, onBack }) {
     if (betAmt > balance || betAmt < 1 || !entryOpen) return;
     if (soundRef.current) AudioEngine.tradeEntry(dir);
     navigator && navigator.vibrate && navigator.vibrate(12);
-    const s     = GlobalMarkets.getStore(TRADE_MARKETS[marketIdxRef.current].id);
-    const entry = s ? s.live : livePrice;
-    const id    = ++tradeSeq.current;
-    const trade = { id, dir, entry, amt:betAmt };
-    setActiveTrades(function(p){ return p.concat([trade]); });
-    activeTradesRef.current = activeTradesRef.current.concat([trade]);
-    setBalance(function(b){ return b - betAmt; });
-  }, [betAmt, balance, entryOpen, livePrice, setBalance]);
+    const m = TRADE_MARKETS[marketIdxRef.current];
+    // Balance and the confirmed trade are applied when bet_accepted comes
+    // back over the socket (see the onBetResponse subscription above) — the
+    // server is the only thing that actually deducts the wallet now.
+    FXSocket.placeBet(m.backendId, dir, betAmt);
+  }, [betAmt, balance, entryOpen]);
 
   const drawPnl = useCallback(function() {
     const canvas = pnlCanvasRef.current; if(!canvas)return;
@@ -577,7 +636,15 @@ export default function TradingGame({ balance, setBalance, onBack }) {
 
   useEffect(function(){ if(activeTab==="profile")drawPnl(); }, [activeTab, stats, drawPnl]);
 
-  if (loading) return <TradingLoader onDone={function(){ setLoading(false); }} />;
+  if (loading) return <TradingLoader onDone={function(){
+    // Wait for the socket to actually be authenticated before dropping the
+    // loader — the animation has a fixed duration, but the real connection
+    // might take a beat longer on a slow network.
+    (function checkReady() {
+      if (FXSocket.isAuthed()) setLoading(false);
+      else setTimeout(checkReady, 150);
+    })();
+  }} />;
 
   const headerStyle = { background:"rgba(7,7,14,0.95)", borderBottom:"1px solid rgba(255,255,255,0.06)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 };
 
@@ -589,6 +656,7 @@ export default function TradingGame({ balance, setBalance, onBack }) {
         @keyframes entryClosed{ 0%,100%{opacity:0.6} 50%{opacity:1} }
         @keyframes blink2     { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes fadeIn     { from{opacity:0} to{opacity:1} }
+        @keyframes popIn      { 0%{opacity:0;transform:scale(0.7) rotate(-4deg)} 60%{opacity:1;transform:scale(1.05) rotate(1deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
       `}</style>
 
       <div style={headerStyle}>
@@ -703,7 +771,11 @@ export default function TradingGame({ balance, setBalance, onBack }) {
             <div style={{ padding:"0 10px 10px",display:"flex",flexDirection:"column",gap:6 }}>
               {activeTrades.length===0
                 ? <div style={{ textAlign:"center",padding:18,color:"#3a3a5a",fontSize:13 }}>No active positions</div>
-                : activeTrades.map(function(t){ return <PositionCard key={t.id} trade={t} livePrice={livePrice} market={market} />; })
+                : activeTrades.map(function(t){
+                    const tm = marketByBackendId[t.marketId] || market;
+                    const ts = FXSocket.getStore(tm.id);
+                    return <PositionCard key={t.id} trade={t} livePrice={ts ? ts.live : livePrice} market={tm} />;
+                  })
               }
             </div>
           </div>
@@ -787,6 +859,8 @@ export default function TradingGame({ balance, setBalance, onBack }) {
           </div>
         </div>
       )}
+
+    
     </div>
   );
 }

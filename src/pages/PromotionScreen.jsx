@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { G, gradient } from "../constants";
 import BottomNav from "../components/BottomNav";
+import { apiRedeemPromoCode, apiGetBalance } from "../api";
 
 const RED = "#EF5350";
 const ORANGE = "#FF7043";
@@ -260,6 +261,62 @@ function VIPScreen({ onBack }) {
   );
 }
 
+// ── Redeem Code Card ──────────────────────────────────────────────
+// Real backend call — credits the wallet server-side and refreshes the
+// real balance, unlike the referral simulate buttons above which are
+// still local/fake.
+function RedeemCodeCard({ setBalance }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState(null); // { type: "success"|"error", text }
+
+  async function redeem() {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const result = await apiRedeemPromoCode(trimmed);
+      setFeedback({ type: "success", text: result.message });
+      setCode("");
+      apiGetBalance().then(b => setBalance(b)).catch(() => {});
+    } catch (e) {
+      setFeedback({ type: "error", text: e.message || "Could not redeem code." });
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div style={{ margin: "16px 14px 0" }}>
+      <div style={{ fontWeight: 800, fontSize: 14, color: "#333", borderLeft: `4px solid ${RED}`, paddingLeft: 10, marginBottom: 12 }}>Redeem Code</div>
+      <div style={{ background: "#fff", borderRadius: 16, padding: "16px 18px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div style={{ display: "flex", gap: 10 }}>
+          <input
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === "Enter" && redeem()}
+            placeholder="Enter promo code"
+            style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1.5px solid #eee", fontSize: 14, fontFamily: "monospace", fontWeight: 700, color: "#333", outline: "none", boxSizing: "border-box" }}
+          />
+          <button onClick={redeem} disabled={busy || !code.trim()} style={{
+            padding: "0 20px", borderRadius: 10, border: "none",
+            background: busy || !code.trim() ? "#eee" : `linear-gradient(135deg,${RED},${ORANGE})`,
+            color: busy || !code.trim() ? "#aaa" : "#fff", fontWeight: 700, fontSize: 13,
+            cursor: busy || !code.trim() ? "default" : "pointer", fontFamily: "'Poppins',sans-serif", whiteSpace: "nowrap",
+          }}>
+            {busy ? "..." : "Redeem"}
+          </button>
+        </div>
+        {feedback && (
+          <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 600, color: feedback.type === "success" ? "#22C55E" : RED }}>
+            {feedback.text}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════
 // MAIN PROMOTION SCREEN
 // ══════════════════════════════════════════════════════════════════
@@ -303,6 +360,8 @@ export default function PromotionScreen({ user, balance, setBalance, onGoHome, o
           ))}
         </div>
       </div>
+
+      <RedeemCodeCard setBalance={setBalance} />
 
       {/* Agency / Referral card */}
       <div style={{ margin: "16px 14px 0" }}>

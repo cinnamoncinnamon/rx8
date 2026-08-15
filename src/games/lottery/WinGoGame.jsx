@@ -3,7 +3,7 @@ import { NUM_COLORS, CSS, gradient } from "../../constants";
 import Ball from "../../components/Ball";
 import { getToken } from "../../api";
 
-const WS_URL = "ws://localhost:4000/ws/wingo";
+const WS_URL = `${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/wingo`;
 
 const MODES = [
   { label: "30s",   seconds: 30  },
@@ -57,7 +57,12 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
   const [history, setHistory] = useState([]);
   const [currentPeriod, setCurrentPeriod] = useState("");
   const [pendingBets, setPendingBets] = useState([]);
-  const [myHistory, setMyHistory] = useState([]);
+  const [myHistory, setMyHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem("wingo_my_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [modal, setModal] = useState(null);
   const [activeTab, setActiveTab] = useState("history");
   const [resultFlash, setResultFlash] = useState(null);
@@ -69,6 +74,10 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
   const pendingBetsRef = useRef([]);
 
   useEffect(() => { pendingBetsRef.current = pendingBets; }, [pendingBets]);
+
+  useEffect(() => {
+    try { localStorage.setItem("wingo_my_history", JSON.stringify(myHistory)); } catch { /* storage unavailable — history still works this session */ }
+  }, [myHistory]);
 
   const connect = useCallback(() => {
     const token = getToken();
@@ -128,7 +137,7 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
             if (won) totalWin += b.amount * (PAYOUTS[b.type] || 2);
           });
           setMyHistory(mh => [{
-            period: msg.period, number, bets: myBets, totalWin,
+            period: msg.period, number, bets: myBets, totalWin, market: modeRef.current.label,
             time: new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })
           }, ...mh].slice(0, 30));
           setResultFlash({ number, won: totalWin > 0, amount: totalWin });
@@ -161,12 +170,17 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
     return () => { if (wsRef.current) wsRef.current.close(); };
   }, [connect]);
 
-  // Switch mode
+  // Switch mode — also clears the visual "selected" highlight on old bets so
+  // it doesn't look like this new market already has a bet on it. The bets
+  // themselves are already locked in server-side for their original round
+  // and are untouched; this only resets what's shown as selected here.
   useEffect(() => {
     modeRef.current = MODES[modeIdx];
     if (wsRef.current?.readyState === 1) {
       wsRef.current.send(JSON.stringify({ type: "subscribe", seconds: MODES[modeIdx].seconds }));
     }
+    setPendingBets([]);
+    pendingBetsRef.current = [];
   }, [modeIdx]);
 
   function placeBet(type, value, amount) {
@@ -313,7 +327,10 @@ export default function WinGoGame({ balance, setBalance, onBack }) {
             : myHistory.map((row,i) => (
               <div key={i} style={{ padding:"12px 16px", borderBottom:"1px solid #f5f5f5", background:i%2?"#fff":"#fafafa" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <span style={{ fontSize:10, color:"#aaa" }}>{row.period.slice(-8)} · {row.time}</span>
+                  <span style={{ fontSize:10, color:"#aaa" }}>
+                    <span style={{ background:"#EF5350", color:"#fff", borderRadius:5, padding:"1px 6px", fontWeight:700, marginRight:6 }}>{row.market || "WinGo"}</span>
+                    {row.period.slice(-8)} · {row.time}
+                  </span>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     <Ball number={row.number} size={24} />
                     <span style={{ fontWeight:800, color:row.number>=5?"#F97316":"#3B82F6", fontSize:12 }}>{row.number>=5?"Big":"Small"}</span>

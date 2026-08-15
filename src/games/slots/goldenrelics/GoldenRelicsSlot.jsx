@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SYMBOLS, SYMBOL_PAY, SYMBOL_WEIGHT, SymbolGlyph } from "./symbols";
-import { mulberry32 } from "./rng";
 import "./GoldenRelicsSlot.css";
 import { UnderwaterScene } from "./UnderwaterScene";
-import { slotPickSymbol } from "../../../utils/gameEngine";
+import { getToken } from "../../../api";
 
-const _R=5,_RW=3,_SC="poseidon",_BSA=10,_BRA=5,_BWM=3,_JS=50000,_JC=0.02,_JT=0.00015,_JBB=0.0005;
-const _WP=(()=>{const p=[];for(const s of SYMBOLS){if(s===_SC)continue;const w=SYMBOL_WEIGHT[s]??1;for(let i=0;i<w;i++)p.push(s);}return p;})();
-const _pk=(rand,sb=0)=>rand()<sb?_SC:slotPickSymbol(_WP);
-const _bg=(rand,sb=0)=>Array.from({length:_R},()=>Array.from({length:_RW},()=>_pk(rand,sb)));
+const _R=5,_RW=3,_SC="poseidon",_BWM=3,_JS=50000;
 const _ig=()=>Array.from({length:_R},(_,c)=>Array.from({length:_RW},(_,r)=>SYMBOLS[(c*3+r)%SYMBOLS.length]));
 const BET_STEPS=[5,10,25,50,100,200,500];
 
@@ -32,14 +28,12 @@ export function GoldenRelicsSlot({balance,setBalance,onBack}){
   const [jackpot,setJackpot]=useState(_JS);
   const [totalWon,setTotalWon]=useState(0);
   const [jackpotHit,setJackpotHit]=useState(null);
-  const rngRef=useRef(mulberry32(0xA71A57));
 
-  useEffect(()=>{
-    const buf=new Uint32Array(2);
-    if(typeof crypto!=="undefined"&&crypto.getRandomValues)crypto.getRandomValues(buf);
-    else{buf[0]=Date.now()&0xffffffff;buf[1]=(Date.now()/1000)&0xffffffff;}
-    rngRef.current=mulberry32((buf[0]^buf[1])>>>0);
-  },[]);
+  // Fresh per mount, matching Tomb Raiders/Elements Fury — resets free
+  // spins/jackpot state on refresh, per the earlier decision to keep that
+  // behavior rather than persist indefinitely.
+  const sessionIdRef=useRef(crypto.randomUUID());
+  const SPIN_API=`${import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"}/api/games/slots/spin`;
 
   const isSpinning=spinning.some(Boolean);
   const canSpin=!isSpinning&&!bonusIntro&&(freeSpins>0||balance>=bet);
@@ -60,45 +54,69 @@ export function GoldenRelicsSlot({balance,setBalance,onBack}){
     for(let i=0;i<count;i++){const ang=Math.random()*Math.PI*2,speed=2+Math.random()*4;particlesRef.current.push({id:pidRef.current++,x,y,dx:Math.cos(ang)*speed,dy:Math.sin(ang)*speed-(kind==="bubble"||kind==="pearl"?2:0),kind,life:900+Math.random()*700});}
   },[]);
 
-  const evaluateWins=useCallback((g,multiplier)=>{
-    const result=[];
-    for(let r=0;r<_RW;r++){const s=g[0][r];let count=1;for(let c=1;c<_R;c++){if(g[c][r]===s)count++;else break;}if(count>=3){const pay=SYMBOL_PAY[s]*(count===5?5:count===4?2:1);const amount=Math.round((bet/10)*pay*multiplier);result.push({row:r,cols:Array.from({length:count},(_,i)=>i),symbol:s,amount});}}
-    return result;
-  },[bet]);
+  // evaluateWins/countScatters removed — the server's response already
+  // includes `wins` (same {row,cols,symbol,amount} shape) and `scatterHits`
+  // (same "col-row" string format), computed authoritatively.
 
-  const countScatters=(g)=>{const hits=[];for(let c=0;c<_R;c++)for(let r=0;r<_RW;r++)if(g[c][r]===_SC)hits.push(`${c}-${r}`);return hits;};
 
-  const doSpin=useCallback(()=>{
+  const doSpin=useCallback(async()=>{
     if(!canSpin)return;
     const uFS=freeSpins>0;
-    if(!uFS){setBalance(b=>b-bet);setJackpot(j=>j+Math.round(bet*_JC*100)/100);}
-    if(uFS)setFreeSpins(n=>n-1);
     setWins([]);setScatterHits([]);
-    const rand=rngRef.current;
-    const jWon=!uFS&&rand()<(_JT+Math.max(0,bet-5)*_JBB);
-    const fg=_bg(rand,uFS?0.14:0.02);
+
+    // Fetch the real result FIRST, then animate the reels to land on it —
+    // same pattern as Tomb Raiders/Elements Fury. The server decides the
+    // outcome (grid, wins, free spins, jackpot) before any animation
+    // starts; the client only displays it.
+    let result;
+    try{
+      const r=await fetch(SPIN_API,{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
+        body:JSON.stringify({game:"goldenrelics",amount:bet,sessionId:sessionIdRef.current}),
+      });
+      result=await r.json();
+      if(!r.ok)return; // insufficient balance / rate-limited / etc — fail quietly, same as other games
+    }catch{
+      return;
+    }
+
+    const fg=result.grid;
     setSpinning(Array(_R).fill(true));
     fg.forEach((reel,i)=>{
       setTimeout(()=>{
         setGrid(cur=>{const cp=cur.map(r=>r.slice());cp[i]=reel;return cp;});
         setSpinning(cur=>{const cp=cur.slice();cp[i]=false;return cp;});
         if(i===_R-1){
-          const mult=uFS?_BWM:1;const w=evaluateWins(fg,mult);const scatters=countScatters(fg);
-          setScatterHits(scatters);
-          const lt=w.reduce((acc,x)=>acc+x.amount,0);
-          if(lt===0)setWinTotal(0);
-          if(lt>0){setWins(w);setWinTotal(lt);setBalance(b=>b+lt);setTotalWon(t=>t+lt);setShock(n=>n+1);if(uFS)setBonusTotal(t=>t+lt);
-            requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();w.forEach(line=>line.cols.forEach(c=>{const cell=document.querySelector(`[data-cell="${c}-${line.row}"]`);if(!cell)return;const r=cell.getBoundingClientRect();const x=r.left+r.width/2-fr.left,y=r.top+r.height/2-fr.top;emit(x,y,"coin",uFS?16:10);emit(x,y,"bubble",8);emit(x,y,"spark",uFS?10:6);}));});
+          setBalance(result.balance);
+          setJackpot(result.jackpot);
+          setScatterHits(result.scatterHits||[]);
+
+          const lt=result.winTotal||0;
+          setWinTotal(lt);
+          if(lt>0){
+            setWins(result.wins);setTotalWon(t=>t+lt);setShock(n=>n+1);if(uFS)setBonusTotal(t=>t+lt);
+            requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();result.wins.forEach(line=>line.cols.forEach(c=>{const cell=document.querySelector(`[data-cell="${c}-${line.row}"]`);if(!cell)return;const r=cell.getBoundingClientRect();const x=r.left+r.width/2-fr.left,y=r.top+r.height/2-fr.top;emit(x,y,"coin",uFS?16:10);emit(x,y,"bubble",8);emit(x,y,"spark",uFS?10:6);}));});
           }
-          if(scatters.length>=3){const retrigger=uFS,award=retrigger?_BRA:_BSA;setBonusIntro({award,retrigger});
-            requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();scatters.forEach(key=>{const cell=document.querySelector(`[data-cell="${key}"]`);if(!cell)return;const r=cell.getBoundingClientRect();const x=r.left+r.width/2-fr.left,y=r.top+r.height/2-fr.top;emit(x,y,"spark",20);emit(x,y,"bubble",14);emit(x,y,"pearl",6);});});
-            setTimeout(()=>{setBonusIntro(null);setFreeSpins(n=>n+award);if(!retrigger)setBonusTotal(0);},2600);
+
+          if(result.bonusAwarded){
+            const{award,retrigger}=result.bonusAwarded;
+            setBonusIntro({award,retrigger});
+            requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();(result.scatterHits||[]).forEach(key=>{const cell=document.querySelector(`[data-cell="${key}"]`);if(!cell)return;const r=cell.getBoundingClientRect();const x=r.left+r.width/2-fr.left,y=r.top+r.height/2-fr.top;emit(x,y,"spark",20);emit(x,y,"bubble",14);emit(x,y,"pearl",6);});});
+            setTimeout(()=>{setBonusIntro(null);setFreeSpins(result.freeSpinsRemaining);if(!retrigger)setBonusTotal(0);},2600);
+          }else{
+            setFreeSpins(result.freeSpinsRemaining);
           }
-          if(jWon){setJackpot(cur=>{setBalance(b=>b+cur);setTotalWon(t=>t+cur);setJackpotHit(cur);setShock(n=>n+1);requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();for(let k=0;k<8;k++)emit(fr.width*(0.2+(k/8)*0.6),fr.height*0.4,"coin",22);});setTimeout(()=>setJackpotHit(null),4200);return _JS;});}
+
+          if(result.jackpotWon){
+            setJackpotHit(result.jackpotWon);setShock(n=>n+1);
+            requestAnimationFrame(()=>{const frame=document.getElementById("slot-frame");if(!frame)return;const fr=frame.getBoundingClientRect();for(let k=0;k<8;k++)emit(fr.width*(0.2+(k/8)*0.6),fr.height*0.4,"coin",22);});
+            setTimeout(()=>setJackpotHit(null),4200);
+          }
         }
       },turbo?80+i*50:500+i*280);
     });
-  },[bet,canSpin,emit,evaluateWins,freeSpins,setBalance,turbo]);
+  },[bet,canSpin,emit,freeSpins,setBalance,turbo]);
 
   useEffect(()=>{
     if(isSpinning||bonusIntro)return;
@@ -185,7 +203,7 @@ export function GoldenRelicsSlot({balance,setBalance,onBack}){
           <div className="gr-bet-val gr-gold-text">৳{bet}</div>
           <div className="gr-btn-row">
             <button className="gr-btn-aqua" onClick={()=>{if(!isSpinning&&!inBonus)setBet(b=>Math.max(1,b-1));}}>−</button>
-            <button className="gr-btn-aqua" onClick={()=>{if(!isSpinning&&!inBonus)setBet(b=>b+1);}}>+</button>
+            <button className="gr-btn-aqua" onClick={()=>{if(!isSpinning&&!inBonus)setBet(b=>Math.min(1000,b+1));}}>+</button>
           </div>
           {/* AUTO + TURBO sit right under bet */}
           <div style={{display:"flex",gap:5,marginTop:6}}>

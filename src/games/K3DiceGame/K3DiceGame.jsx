@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { CSS } from "../../constants";
 import { getToken } from "../../api";
 
-const WS_URL = "ws://localhost:4000/ws/k3";
+const WS_URL = `${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/k3`;
 
 const MODES = [
   { id: "15s", label: "K3 15 Sec", seconds: 15 },
@@ -84,7 +84,12 @@ export default function K3DiceGame({ balance, setBalance, onBack }) {
   const [currentPeriod, setCurrentPeriod] = useState("");
   const [history, setHistory] = useState([]);
   const [pendingBets, setPendingBets] = useState([]);
-  const [myHistory, setMyHistory] = useState([]);
+  const [myHistory, setMyHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem("k3_my_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [activeTab, setActiveTab] = useState(0); // 0 Total, 1 2Same, 2 3Same, 3 Diff
   const [bottomTab, setBottomTab] = useState(0); // 0 History, 1 Chart, 2 My History
   const [err, setErr] = useState("");
@@ -100,6 +105,10 @@ export default function K3DiceGame({ balance, setBalance, onBack }) {
   const pendingRef = useRef([]);
   const rollTimerRef = useRef(null);
   useEffect(() => { pendingRef.current = pendingBets; }, [pendingBets]);
+
+  useEffect(() => {
+    try { localStorage.setItem("k3_my_history", JSON.stringify(myHistory)); } catch { /* storage unavailable — history still works this session */ }
+  }, [myHistory]);
 
   const showToast = (msg, type = "info") => { setToast({ msg, type }); setTimeout(() => setToast(null), 2200); };
 
@@ -155,7 +164,7 @@ export default function K3DiceGame({ balance, setBalance, onBack }) {
           });
           if (totalWin > 0) { setBalance((b) => b + totalWin); showToast(`🎉 Won ৳${totalWin.toFixed(2)}!`, "win"); }
           else showToast(`💸 Round lost`, "lose");
-          setMyHistory((mh) => [{ period: msg.period, result: r, bets: myBets, totalWin, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }, ...mh].slice(0, 30));
+          setMyHistory((mh) => [{ period: msg.period, result: r, bets: myBets, totalWin, market: modeRef.current.label, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }, ...mh].slice(0, 30));
         }
       }
       if (msg.type === "bet_accepted") {
@@ -171,9 +180,15 @@ export default function K3DiceGame({ balance, setBalance, onBack }) {
 
   useEffect(() => { connect(); return () => { if (wsRef.current) wsRef.current.close(); }; }, [connect]);
 
+  // Switch mode — clears the visual "selected" highlight from the old
+  // market, same reasoning as WinGo: the bets themselves already resolved
+  // server-side for their original round, this just resets what's shown as
+  // selected so the new market's board isn't showing stale highlights.
   useEffect(() => {
     modeRef.current = MODES[modeIdx];
     if (wsRef.current?.readyState === 1) wsRef.current.send(JSON.stringify({ type: "subscribe", modeId: MODES[modeIdx].id }));
+    setPendingBets([]);
+    pendingRef.current = [];
   }, [modeIdx]);
 
   // Rolling dice animation during the last few locked seconds
@@ -518,7 +533,10 @@ export default function K3DiceGame({ balance, setBalance, onBack }) {
                   {myHistory.map((row, i) => (
                     <div key={i} style={{ padding: "12px 14px", borderBottom: "1px solid #f5f5f5" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "center" }}>
-                        <span style={{ fontSize: 10, color: "#aaa" }}>{row.time}</span>
+                        <span style={{ fontSize: 10, color: "#aaa" }}>
+                          <span style={{ background: R, color: "#fff", borderRadius: 5, padding: "1px 6px", fontWeight: 700, marginRight: 6 }}>{row.market || "K3"}</span>
+                          {row.time}
+                        </span>
                         <div style={{ display: "flex", gap: 3 }}>{row.result.dice.map((d, j) => <MiniDice key={j} value={d} size={18} />)}</div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: "#c0392b" }}>{row.result.sum}</span>
                       </div>

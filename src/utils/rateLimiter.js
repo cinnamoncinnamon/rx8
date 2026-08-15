@@ -9,6 +9,7 @@ const LIMITS = {
   register: { max: 3,  windowMs: 10 * 60 * 1000, label: "Register" }, // 3 tries / 10 min
   deposit:  { max: 5,  windowMs: 60 * 60 * 1000, label: "Deposit"  }, // 5 tries / 1 hr
   withdraw: { max: 3,  windowMs: 60 * 60 * 1000, label: "Withdraw" }, // 3 tries / 1 hr
+  "forgot-password": { max: 5, windowMs: 15 * 60 * 1000, label: "Reset" }, // matches backend forgotPasswordLimiter
 };
 
 function storageKey(action) {

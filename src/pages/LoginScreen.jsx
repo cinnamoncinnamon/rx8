@@ -3,15 +3,32 @@ import { G, CSS, gradient } from "../constants";
 import { apiLogin } from "../api";
 import viewIcon from "../assets/view.png";
 import hideIcon from "../assets/hide.png";
-export default function LoginScreen({ onLogin, onGotoRegister }) {
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+export default function LoginScreen({ onLogin, onGotoRegister, onGotoForgotPassword }) {
   const [input, setInput] = useState("");
   const [pass, setPass] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
+  const [appOnline, setAppOnline] = useState(true);
+  const [statusChecked, setStatusChecked] = useState(false);
 
-  useEffect(() => { setTimeout(() => setShow(true), 80); }, []);
+  useEffect(() => {
+    setTimeout(() => setShow(true), 80);
+    fetch(`${API_BASE}/api/status`)
+      .then((r) => r.json())
+      .then((d) => {
+        setAppOnline(d.online !== false);
+        setStatusChecked(true);
+      })
+      .catch(() => {
+        setAppOnline(true);
+        setStatusChecked(true);
+      });
+  }, []);
 
   const submit = async () => {
     if (!input || !pass) { setErr("Please fill all fields."); return; }
@@ -25,6 +42,23 @@ export default function LoginScreen({ onLogin, onGotoRegister }) {
     }
     setLoading(false);
   };
+
+  if (statusChecked && !appOnline) {
+    return (
+      <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Poppins',sans-serif", padding: 24 }}>
+        <div style={{ fontSize: 40, fontWeight: 900, color: "#fff", letterSpacing: 2, marginBottom: 8 }}>
+          SPIN<span style={{ color: "#FFE082" }}>OVA</span>
+        </div>
+        <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 20, padding: "32px 28px", maxWidth: 400, width: "100%", textAlign: "center", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🚧</div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>Under Construction</div>
+          <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, lineHeight: 1.5 }}>
+            The app is temporarily unavailable. Please check back soon.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg,#EF5350 0%,#FF8A80 42%,#fff 72%)", display: "flex", flexDirection: "column", alignItems: "center", fontFamily: "'Poppins',sans-serif" }}>
@@ -61,6 +95,10 @@ export default function LoginScreen({ onLogin, onGotoRegister }) {
             <img src={showPass ? hideIcon : viewIcon} alt="toggle" style={{ width: 20, height: 20, opacity: 0.45 }} />
             </button>
           </div>
+        </div>
+
+        <div style={{ textAlign: "right", marginBottom: 8, marginTop: -6 }}>
+          <span onClick={onGotoForgotPassword} style={{ color: G.sub, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Forgot password?</span>
         </div>
 
         {err && <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "#FFF0F0", borderRadius: 8 }}>{err}</div>}

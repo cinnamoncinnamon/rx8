@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CSS } from "./constants";
 import LoginScreen from "./pages/LoginScreen";
 import RegisterScreen from "./pages/RegisterScreen";
+import ForgotPasswordScreen from "./pages/ForgotPasswordScreen";
 import HomeScreen from "./pages/HomeScreen";
 import WinGoGame from "./games/lottery/WinGoGame";
 import AviatorGame from "./games/aviator/AviatorGame";
@@ -18,6 +19,7 @@ import GoldenRelicsSlot from "./games/slots/goldenrelics/GoldenRelicsSlot";
 import ActivityScreen from "./pages/ActivityScreen";
 import PromotionScreen from "./pages/PromotionScreen";
 import K3DiceGame from "./games/K3DiceGame/K3DiceGame";
+import NotificationsScreen from "./pages/NotificationsScreen";
 import { apiGetBalance, apiLogout, apiRefreshToken } from "./api";
 
 export default function App() {
@@ -28,7 +30,7 @@ export default function App() {
   const [openSecurityOnProfile, setOpenSecurityOnProfile] = useState(false);
 
   const isPlaying = screen === "wingo" || screen === "aviator" || screen === "trading";
-  const isLoggedIn = screen !== "login" && screen !== "register" && !!user;
+  const isLoggedIn = screen !== "login" && screen !== "register" && screen !== "forgot-password" && !!user;
 
   // Fetch real balance from server on load and every 15 seconds
   useEffect(() => {
@@ -73,9 +75,11 @@ export default function App() {
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", position: "relative", minHeight: "100vh", overflowY: "auto" }}>
       <style>{CSS}</style>
-      {screen === "login" && <LoginScreen onLogin={handleLogin} onGotoRegister={() => setScreen("register")} />}
+      {screen === "login" && <LoginScreen onLogin={handleLogin} onGotoRegister={() => setScreen("register")} onGotoForgotPassword={() => setScreen("forgot-password")} />}
       {screen === "register" && <RegisterScreen onRegister={handleRegister} onBack={() => setScreen("login")} />}
-      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => { setProfileNav("account"); setOpenSecurityOnProfile(false); setScreen("profile"); }} onGoWallet={() => setScreen("wallet")} onGoActivity={() => setScreen("activity")} onGoPromo={() => setScreen("promotion")} />}
+      {screen === "forgot-password" && <ForgotPasswordScreen onBack={() => setScreen("login")} onDone={() => setScreen("login")} />}
+      {screen === "home" && <HomeScreen user={user} balance={balance} onSelectGame={(g) => setScreen(g)} onGoProfile={() => { setProfileNav("account"); setOpenSecurityOnProfile(false); setScreen("profile"); }} onGoWallet={() => setScreen("wallet")} onGoActivity={() => setScreen("activity")} onGoPromo={() => setScreen("promotion")} onGoNotifications={() => setScreen("notifications")} />}
+      {screen === "notifications" && <NotificationsScreen onBack={() => setScreen("home")} />}
       {screen === "activity" && <ActivityScreen user={user} balance={balance} setBalance={setBalance} onGoHome={() => setScreen("home")} onGoWallet={() => setScreen("wallet")} onGoProfile={() => { setProfileNav("account"); setOpenSecurityOnProfile(false); setScreen("profile"); }} onGoPromo={() => setScreen("promotion")} />}
       {screen === "promotion" && <PromotionScreen user={user} balance={balance} setBalance={setBalance} onGoHome={() => setScreen("home")} onGoWallet={() => setScreen("wallet")} onGoProfile={() => { setProfileNav("account"); setOpenSecurityOnProfile(false); setScreen("profile"); }} onGoActivity={() => setScreen("activity")} />}
       {screen === "wingo" && <WinGoGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}

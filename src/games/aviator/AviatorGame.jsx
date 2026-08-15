@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { CSS } from "../../constants";
 import { getToken } from "../../api";
 
-const WS_URL = "ws://localhost:4000/ws/aviator";
+const WS_URL = `${import.meta.env.VITE_WS_BASE_URL || "ws://localhost:4000"}/ws/aviator`;
 const GROWTH_RATE = 0.00011; // cosmetic only — mirrors the server's rate purely so the plane's
                               // flight path animates smoothly; the actual crash point and every
                               // payout are decided server-side, this never feeds into either.
