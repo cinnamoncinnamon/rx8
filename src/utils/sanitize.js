@@ -13,21 +13,24 @@ export function sanitize(val) {
     .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|EXEC|SCRIPT)\b/gi, "") // SQL keywords
     .trim();
 }
-
 // ── Mobile (Bangladesh) ───────────────────────────────────────────────────────
-// Accepts: 01XXXXXXXXX (11 digits) or +8801XXXXXXXXX
 export function validateMobile(val) {
-  const cleaned = val.replace(/\s/g, "");
-  if (/^\+8801[3-9]\d{8}$/.test(cleaned)) return { ok: true, value: cleaned };
-  if (/^01[3-9]\d{8}$/.test(cleaned))     return { ok: true, value: "+880" + cleaned };
-  return { ok: false, message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)" };
-}
+  // keep digits only: ignores spaces, dashes, etc.
+  let digits = String(val || "").replace(/\D/g, "");
 
-// ── Email ─────────────────────────────────────────────────────────────────────
-export function validateEmail(val) {
-  if (val.length > 100) return { ok: false, message: "Email too long." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return { ok: false, message: "Enter a valid email address." };
-  return { ok: true, value: val.toLowerCase() };
+  // +8801XXXXXXXXX (13 digits) → 01XXXXXXXXX
+  if (digits.startsWith("880") && digits.length === 13) {
+    digits = digits.slice(2); // 88019… → 019…
+  }
+
+  if (/^01[3-9]\d{8}$/.test(digits)) {
+    return { ok: true, value: "+880" + digits };
+  }
+
+  return {
+    ok: false,
+    message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)",
+  };
 }
 
 // ── Password ──────────────────────────────────────────────────────────────────
