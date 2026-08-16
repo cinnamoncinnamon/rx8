@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { G, CSS, gradient } from "../constants";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit, remainingAttempts } from "../utils/rateLimiter";
 import { validateRegisterInput } from "../utils/sanitize";
@@ -19,6 +19,7 @@ export default function RegisterScreen({ onRegister, onBack }) {
   const [showInput, setShowInput] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   // After a successful register, we hold the account here and show the
   // recovery code once before actually logging the user into the app.
@@ -26,9 +27,29 @@ export default function RegisterScreen({ onRegister, onBack }) {
   const [recoveryCode, setRecoveryCode] = useState("");
   const [savedConfirmed, setSavedConfirmed] = useState(false);
 
+  // Live countdown ticking down every second while locked out
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) {
+          clearInterval(timer);
+          setErr("");
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
+
   const submit = async () => {
     const check = checkRateLimit("register");
-    if (!check.allowed) { setErr(check.message); return; }
+    if (!check.allowed) {
+      setErr(check.message);
+      setCountdown(Math.ceil(check.waitMs / 1000));
+      return;
+    }
 
     if (!verified) { setErr("Please complete the verification slider."); return; }
 
@@ -125,7 +146,6 @@ export default function RegisterScreen({ onRegister, onBack }) {
         <div style={{ fontWeight: 800, fontSize: 22, color: G.text, marginBottom: 4 }}>Join SPINOVA 🎮</div>
         <div style={{ color: G.sub, fontSize: 13, marginBottom: 20 }}>Start winning today</div>
 
-        {/* Fields */}
         {/* Full Name */}
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 12, color: G.sub, marginBottom: 6, fontWeight: 600 }}>Full Name</div>
@@ -185,7 +205,16 @@ export default function RegisterScreen({ onRegister, onBack }) {
           </div>
         </div>
 
-        {err && <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8 }}>{err}</div>}
+        {err && (
+          <div style={{ color: "#EF5350", fontSize: 12, marginBottom: 8 }}>
+            {err}
+            {countdown > 0 && (
+              <span style={{ fontWeight: 700 }}>
+                {" "}({Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")})
+              </span>
+            )}
+          </div>
+        )}
 
         {rem <= 1 && rem > 0 && !err && (
           <div style={{ color: "#FF8F00", fontSize: 12, marginBottom: 8 }}>

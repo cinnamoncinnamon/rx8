@@ -1,9 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   SPINOVA Input Sanitizer
-   Call sanitize(value) to clean, then validate*(value) to check.
+   SPINOVA Input Sanitizer (frontend)
 ───────────────────────────────────────────────────────────────────────────── */
 
-// ── Strip dangerous characters ────────────────────────────────────────────────
 export function sanitize(val) {
   if (typeof val !== "string") return "";
   return val
@@ -14,41 +12,56 @@ export function sanitize(val) {
     .trim();
 }
 
-// ── Mobile (Bangladesh) ───────────────────────────────────────────────────────
+// Always returns 01XXXXXXXXX (no +880 prefix — matches backend)
 export function validateMobile(val) {
-  const cleaned = val.replace(/[\s-]/g, "");
-  if (/^\+8801[3-9]\d{8}$/.test(cleaned)) return { ok: true, value: cleaned };
-  if (/^01[3-9]\d{8}$/.test(cleaned))     return { ok: true, value: "+880" + cleaned };
-  if (/^8801[3-9]\d{8}$/.test(cleaned))   return { ok: true, value: "+" + cleaned };
-  return { ok: false, message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)" };
+  let digits = String(val || "").replace(/\D/g, "");
+
+  // 8801XXXXXXXXX → 01XXXXXXXXX
+  if (digits.startsWith("880") && digits.length === 13) {
+    digits = digits.slice(2);
+  }
+
+  // broken +8800… form → fix
+  if (digits.startsWith("8800") && digits.length === 14) {
+    digits = "0" + digits.slice(4);
+  }
+
+  if (/^01[3-9]\d{8}$/.test(digits)) {
+    return { ok: true, value: digits };
+  }
+
+  return {
+    ok: false,
+    message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)",
+  };
 }
 
-// ── Email ─────────────────────────────────────────────────────────────────────
 export function validateEmail(val) {
   if (val.length > 100) return { ok: false, message: "Email too long." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return { ok: false, message: "Enter a valid email address." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
   return { ok: true, value: val.toLowerCase() };
 }
 
-// ── Password ──────────────────────────────────────────────────────────────────
 export function validatePassword(val) {
-  if (val.length < 6)  return { ok: false, message: "Password must be at least 6 characters." };
+  if (val.length < 6) return { ok: false, message: "Password must be at least 6 characters." };
   if (val.length > 64) return { ok: false, message: "Password too long." };
-  if (val !== val.trim()) return { ok: false, message: "Password cannot start or end with spaces." };
+  if (val !== val.trim()) {
+    return { ok: false, message: "Password cannot start or end with spaces." };
+  }
   return { ok: true };
 }
 
-// ── Combined login validator ──────────────────────────────────────────────────
 export function validateLoginInput(method, input, pass) {
   const cleanInput = sanitize(input);
-  const cleanPass  = pass;
+  const cleanPass = pass;
 
   if (!cleanInput) return { ok: false, message: "Please fill all fields." };
-  if (!cleanPass)  return { ok: false, message: "Please fill all fields." };
+  if (!cleanPass) return { ok: false, message: "Please fill all fields." };
 
-  const contactCheck = method === "mobile"
-    ? validateMobile(cleanInput)
-    : validateEmail(cleanInput);
+  const contactCheck =
+    method === "mobile" ? validateMobile(cleanInput) : validateEmail(cleanInput);
   if (!contactCheck.ok) return contactCheck;
 
   const passCheck = validatePassword(cleanPass);
@@ -57,15 +70,15 @@ export function validateLoginInput(method, input, pass) {
   return { ok: true, contact: contactCheck.value };
 }
 
-// ── Combined register validator ───────────────────────────────────────────────
 export function validateRegisterInput(method, input, pass, confirm) {
   const cleanInput = sanitize(input);
 
-  if (!cleanInput || !pass || !confirm) return { ok: false, message: "Fill all fields." };
+  if (!cleanInput || !pass || !confirm) {
+    return { ok: false, message: "Fill all fields." };
+  }
 
-  const contactCheck = method === "mobile"
-    ? validateMobile(cleanInput)
-    : validateEmail(cleanInput);
+  const contactCheck =
+    method === "mobile" ? validateMobile(cleanInput) : validateEmail(cleanInput);
   if (!contactCheck.ok) return contactCheck;
 
   const passCheck = validatePassword(pass);
