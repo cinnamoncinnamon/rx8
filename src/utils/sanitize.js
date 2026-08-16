@@ -7,30 +7,27 @@
 export function sanitize(val) {
   if (typeof val !== "string") return "";
   return val
-    .replace(/<[^>]*>/g, "")           // strip HTML tags
-    .replace(/['"`;\\]/g, "")          // strip SQL/JS injection chars
-    .replace(/--/g, "")                // strip SQL comment
-    .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|EXEC|SCRIPT)\b/gi, "") // SQL keywords
+    .replace(/<[^>]*>/g, "")
+    .replace(/['"`;\\]/g, "")
+    .replace(/--/g, "")
+    .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|EXEC|SCRIPT)\b/gi, "")
     .trim();
 }
+
 // ── Mobile (Bangladesh) ───────────────────────────────────────────────────────
 export function validateMobile(val) {
-  // keep digits only: ignores spaces, dashes, etc.
-  let digits = String(val || "").replace(/\D/g, "");
+  const cleaned = val.replace(/[\s-]/g, "");
+  if (/^\+8801[3-9]\d{8}$/.test(cleaned)) return { ok: true, value: cleaned };
+  if (/^01[3-9]\d{8}$/.test(cleaned))     return { ok: true, value: "+880" + cleaned };
+  if (/^8801[3-9]\d{8}$/.test(cleaned))   return { ok: true, value: "+" + cleaned };
+  return { ok: false, message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)" };
+}
 
-  // +8801XXXXXXXXX (13 digits) → 01XXXXXXXXX
-  if (digits.startsWith("880") && digits.length === 13) {
-    digits = digits.slice(2); // 88019… → 019…
-  }
-
-  if (/^01[3-9]\d{8}$/.test(digits)) {
-    return { ok: true, value: "+880" + digits };
-  }
-
-  return {
-    ok: false,
-    message: "Enter a valid BD mobile number (e.g. 01XXXXXXXXX)",
-  };
+// ── Email ─────────────────────────────────────────────────────────────────────
+export function validateEmail(val) {
+  if (val.length > 100) return { ok: false, message: "Email too long." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return { ok: false, message: "Enter a valid email address." };
+  return { ok: true, value: val.toLowerCase() };
 }
 
 // ── Password ──────────────────────────────────────────────────────────────────
@@ -44,7 +41,7 @@ export function validatePassword(val) {
 // ── Combined login validator ──────────────────────────────────────────────────
 export function validateLoginInput(method, input, pass) {
   const cleanInput = sanitize(input);
-  const cleanPass  = pass; // don't sanitize password — user may use special chars intentionally
+  const cleanPass  = pass;
 
   if (!cleanInput) return { ok: false, message: "Please fill all fields." };
   if (!cleanPass)  return { ok: false, message: "Please fill all fields." };
