@@ -1,190 +1,351 @@
-.plinko-root {
-  min-height: 100dvh;
-  background: linear-gradient(180deg, #0f0a1a 0%, #1a1030 50%, #120c22 100%);
-  color: #f5f3ff;
-  display: flex;
-  flex-direction: column;
-  font-family: "Poppins", system-ui, sans-serif;
-  padding-bottom: 24px;
+/**
+ * Plinko — real-money version for Spinova.
+ * Physics (Matter.js) is visual only. Result comes from backend.
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import Matter from "matter-js";
+import { apiPlinkoPlay } from "../../api";
+import "./PlinkoGame.css";
+
+import sfxBall from "./ball.wav";
+import sfxBest from "./multiplier.wav";
+import sfxGood from "./multiplier-good.wav";
+import sfxLow from "./multiplier-low.wav";
+import sfxRegular from "./multiplier-regular.wav";
+
+const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
+
+const BET_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+const LINES_OPTIONS = [8, 12, 16];
+
+const DISPLAY_MULTS_16 = [
+  110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110,
+];
+
+function multColor(m) {
+  if (m >= 40) return "#ff4d6d";
+  if (m >= 10) return "#ff9f1c";
+  if (m >= 2) return "#2ec4b6";
+  if (m >= 1) return "#7bdff2";
+  return "#6c757d";
 }
 
-.plinko-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.35);
+function playSfx(src, volume = 0.45) {
+  try {
+    const a = new Audio(src);
+    a.volume = volume;
+    a.play().catch(() => {});
+  } catch {
+    /* ignore */
+  }
 }
 
-.plinko-back {
-  background: transparent;
-  border: none;
-  color: #c4b5fd;
-  font-size: 15px;
-  cursor: pointer;
-  padding: 6px 8px;
+function playMultiplierSfx(mult) {
+  if (mult >= 40) playSfx(sfxBest, 0.55);
+  else if (mult >= 5) playSfx(sfxGood, 0.5);
+  else if (mult >= 1) playSfx(sfxRegular, 0.4);
+  else playSfx(sfxLow, 0.35);
 }
 
-.plinko-title {
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-}
+export default function PlinkoGame({ balance, setBalance, onBack }) {
+  const containerRef = useRef(null);
+  const engineRef = useRef(null);
+  const renderRef = useRef(null);
+  const runnerRef = useRef(null);
+  const binsRef = useRef([]);
+  const ballIdCounter = useRef(0);
 
-.plinko-balance {
-  font-weight: 600;
-  color: #fbbf24;
-  font-size: 14px;
-}
+  const [bet, setBet] = useState(10);
+  const [lines, setLines] = useState(16);
+  const [busy, setBusy] = useState(false);
+  const [lastWin, setLastWin] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [error, setError] = useState("");
 
-.plinko-board-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 8px;
-}
+  const width = 390;
+  const height = 420;
+  const pinGap = 20;
+  const pinSize = 3.2;
 
-.plinko-canvas {
-  width: 390px;
-  max-width: 100%;
-  height: 420px;
-  border-radius: 12px;
-  overflow: hidden;
-}
+  const buildWorld = useCallback(() => {
+    if (!containerRef.current) return;
 
-.plinko-canvas canvas {
-  display: block;
-  margin: 0 auto;
-}
+    if (renderRef.current) {
+      Render.stop(renderRef.current);
+      renderRef.current.canvas?.remove();
+      renderRef.current = null;
+    }
+    if (runnerRef.current) {
+      Runner.stop(runnerRef.current);
+      runnerRef.current = null;
+    }
+    if (engineRef.current) {
+      Engine.clear(engineRef.current);
+      engineRef.current = null;
+    }
 
-.plinko-bins {
-  display: flex;
-  width: 390px;
-  max-width: 100%;
-  gap: 2px;
-  padding: 0 4px;
-  margin-top: -4px;
-}
+    const engine = Engine.create();
+    engine.gravity.y = 1;
+    engineRef.current = engine;
 
-.plinko-bin {
-  flex: 1;
-  text-align: center;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 6px 0;
-  border-radius: 4px;
-  color: #0f0a1a;
-  transition: transform 0.2s ease;
-}
+    const render = Render.create({
+      element: containerRef.current,
+      engine,
+      options: {
+        width,
+        height,
+        background: "transparent",
+        wireframes: false,
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      },
+    });
+    renderRef.current = render;
 
-.plinko-result {
-  text-align: center;
-  margin: 10px 16px 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 15px;
-}
+    const runner = Runner.create();
+    runnerRef.current = runner;
+    Runner.run(runner, engine);
+    Render.run(render);
 
-.plinko-result.win {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-}
+    const startPins = 3;
+    const pins = [];
+    for (let row = 0; row < lines; row++) {
+      const pinsInRow = startPins + row;
+      for (let col = 0; col < pinsInRow; col++) {
+        const x = width / 2 - ((pinsInRow - 1) * pinGap) / 2 + col * pinGap;
+        const y = 40 + row * pinGap;
+        pins.push(
+          Bodies.circle(x, y, pinSize, {
+            isStatic: true,
+            render: { fillStyle: "#c4b5fd" },
+            label: "pin",
+          })
+        );
+      }
+    }
+    Composite.add(engine.world, pins);
 
-.plinko-result.lose {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-}
+    const wallOpts = { isStatic: true, render: { fillStyle: "transparent" } };
+    Composite.add(engine.world, [
+      Bodies.rectangle(width / 2, height + 30, width, 60, wallOpts),
+      Bodies.rectangle(-20, height / 2, 40, height, wallOpts),
+      Bodies.rectangle(width + 20, height / 2, 40, height, wallOpts),
+    ]);
 
-.plinko-error {
-  text-align: center;
-  color: #f87171;
-  font-size: 13px;
-  margin-top: 6px;
-}
+    const binCount = lines + 1;
+    const binWidth = (width - 40) / binCount;
+    const bins = [];
+    for (let i = 0; i < binCount; i++) {
+      const x = 20 + binWidth * i + binWidth / 2;
+      bins.push(
+        Bodies.rectangle(x, height - 18, binWidth - 2, 24, {
+          isStatic: true,
+          isSensor: true,
+          label: `bin-${i}`,
+          render: { fillStyle: "rgba(124,58,237,0.15)" },
+        })
+      );
+    }
+    binsRef.current = bins;
+    Composite.add(engine.world, bins);
 
-.plinko-controls {
-  margin: 16px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  border: 1px solid rgba(196, 181, 253, 0.15);
-}
+    Events.on(engine, "collisionStart", (event) => {
+      for (const pair of event.pairs) {
+        const labels = [pair.bodyA.label, pair.bodyB.label];
+        const binLabel = labels.find((l) => l?.startsWith("bin-"));
+        const ballBody = [pair.bodyA, pair.bodyB].find((b) =>
+          b.label?.startsWith("ball-")
+        );
+        if (binLabel && ballBody) {
+          Composite.remove(engine.world, ballBody);
+        }
+      }
+    });
+  }, [lines]);
 
-.plinko-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
+  useEffect(() => {
+    buildWorld();
+    return () => {
+      if (renderRef.current) {
+        Render.stop(renderRef.current);
+        renderRef.current.canvas?.remove();
+      }
+      if (runnerRef.current) Runner.stop(runnerRef.current);
+      if (engineRef.current) Engine.clear(engineRef.current);
+    };
+  }, [buildWorld]);
 
-.plinko-label {
-  width: 48px;
-  font-size: 13px;
-  color: #a78bfa;
-  flex-shrink: 0;
-}
+  const dropBall = useCallback(
+    (targetBinIndex) => {
+      const engine = engineRef.current;
+      if (!engine) return;
 
-.plinko-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+      const id = ++ballIdCounter.current;
+      const startX = width / 2 + (Math.random() - 0.5) * 12;
+      const ball = Bodies.circle(startX, 12, 6, {
+        restitution: 0.55,
+        friction: 0.01,
+        label: `ball-${id}`,
+        render: { fillStyle: "#f472b6" },
+        collisionFilter: { group: -1 },
+      });
+      Composite.add(engine.world, ball);
+      playSfx(sfxBall, 0.35);
 
-.plinko-steps button {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(196, 181, 253, 0.25);
-  color: #e9d5ff;
-  border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
+      const biasHandler = () => {
+        if (!engine.world.bodies.includes(ball)) {
+          Events.off(engine, "beforeUpdate", biasHandler);
+          return;
+        }
+        const binCount = lines + 1;
+        const binWidth = (width - 40) / binCount;
+        const targetX = 20 + binWidth * targetBinIndex + binWidth / 2;
+        const dx = targetX - ball.position.x;
+        if (Math.abs(dx) > 2) {
+          Body.applyForce(ball, ball.position, { x: dx * 0.000015, y: 0 });
+        }
+      };
+      Events.on(engine, "beforeUpdate", biasHandler);
+    },
+    [lines]
+  );
 
-.plinko-steps button.active {
-  background: #7c3aed;
-  border-color: #7c3aed;
-  color: #fff;
-}
+  async function handlePlay() {
+    if (busy) return;
+    setError("");
+    setLastWin(null);
 
-.plinko-steps button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+    if (bet > balance) {
+      setError("Insufficient balance");
+      return;
+    }
 
-.plinko-play {
-  width: 100%;
-  margin-top: 4px;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
-}
+    setBusy(true);
+    try {
+      const result = await apiPlinkoPlay({ betAmount: bet, lines });
+      if (typeof result.balance === "number") {
+        setBalance(result.balance);
+      }
+      setLastWin({
+        multiplier: result.multiplier,
+        winAmount: result.winAmount,
+        binIndex: result.binIndex,
+      });
+      setHistory((h) =>
+        [{ mult: result.multiplier, win: result.winAmount }, ...h].slice(0, 12)
+      );
+      playMultiplierSfx(result.multiplier);
+      dropBall(result.binIndex);
+    } catch (err) {
+      setError(err.message || "Play failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
-.plinko-play:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+  const mults =
+    lines === 16
+      ? DISPLAY_MULTS_16
+      : Array.from({ length: lines + 1 }, (_, i) => {
+          const t = Math.abs(i - lines / 2) / (lines / 2);
+          if (t > 0.9) return 40;
+          if (t > 0.7) return 10;
+          if (t > 0.5) return 3;
+          if (t > 0.3) return 1.5;
+          return 0.5;
+        });
 
-.plinko-history {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  padding: 8px 16px 0;
-}
+  return (
+    <div className="plinko-root">
+      <div className="plinko-topbar">
+        <button type="button" className="plinko-back" onClick={onBack}>
+          ← Back
+        </button>
+        <div className="plinko-title">Plinko</div>
+        <div className="plinko-balance">৳{Number(balance).toFixed(2)}</div>
+      </div>
 
-.plinko-history span {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
+      <div className="plinko-board-wrap">
+        <div ref={containerRef} id="plinko-canvas" className="plinko-canvas" />
+        <div className="plinko-bins">
+          {mults.map((m, i) => (
+            <div
+              key={i}
+              className="plinko-bin"
+              style={{
+                background: multColor(m),
+                opacity: lastWin?.binIndex === i ? 1 : 0.85,
+                transform: lastWin?.binIndex === i ? "scale(1.08)" : "scale(1)",
+              }}
+            >
+              {m}x
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {lastWin && (
+        <div className={`plinko-result ${lastWin.winAmount > 0 ? "win" : "lose"}`}>
+          {lastWin.winAmount > 0
+            ? `+৳${lastWin.winAmount.toFixed(2)} (${lastWin.multiplier}x)`
+            : `No win (${lastWin.multiplier}x)`}
+        </div>
+      )}
+      {error && <div className="plinko-error">{error}</div>}
+
+      <div className="plinko-controls">
+        <div className="plinko-row">
+          <span className="plinko-label">Bet</span>
+          <div className="plinko-steps">
+            {BET_STEPS.filter((s) => s <= 500).map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={bet === s ? "active" : ""}
+                onClick={() => setBet(s)}
+                disabled={busy}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="plinko-row">
+          <span className="plinko-label">Lines</span>
+          <div className="plinko-steps">
+            {LINES_OPTIONS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={lines === n ? "active" : ""}
+                onClick={() => setLines(n)}
+                disabled={busy}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="plinko-play"
+          onClick={handlePlay}
+          disabled={busy || bet > balance}
+        >
+          {busy ? "Dropping…" : `Drop ৳${bet}`}
+        </button>
+      </div>
+
+      {history.length > 0 && (
+        <div className="plinko-history">
+          {history.map((h, i) => (
+            <span key={i} style={{ color: multColor(h.mult) }}>
+              {h.mult}x
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
