@@ -42,6 +42,7 @@ const PINK = "#FA5C5C";
 const POPULAR_GAMES = [
   { id: "wingo", name: "Win Go", desc: "Guess Number\nGreen/Red/Violet to win", icon: iconWingo, bg: PINK, tag: "HOT" },
   { id: "aviator", name: "Aviator", desc: "Cash out before\nit flies away!", icon: iconAviator, bg: "linear-gradient(90deg, #5B6BC8 0%, #7B8AD4 50%, #A8B4F0 100%)", tag: "POPULAR" },
+  { id: "plinko", name: "Plinko", desc: "Drop the ball\nHit big multipliers!", icon: iconAviator, bg: "linear-gradient(90deg, #7C3AED 0%, #A855F7 50%, #C084FC 100%)", tag: "NEW" },
   { id: "motoride", name: "Moto Ride", desc: "Race & cash out\nbefore crash!", icon: iconMoto, bg: "linear-gradient(90deg, #F97316 0%, #FB923C 50%, #FDBA74 100%)", tag: "NEW" },
   { id: "roadrush", name: "Road Rush", desc: "Drive & cash out\nbefore you crash!", icon: iconRoad, bg: "linear-gradient(90deg, #3B82F6 0%, #60A5FA 50%, #93C5FD 100%)", tag: "NEW" },
   { id: "trading", name: "FX Trader", desc: "Trade USD/JPY\nEUR/USD · XAU/USD", icon: iconFx, bg: "linear-gradient(90deg, #0D9488 0%, #14B8A6 50%, #5EEAD4 100%)" },

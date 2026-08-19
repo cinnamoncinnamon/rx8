@@ -18,6 +18,7 @@ import SuperElementSlot from "./games/slots/elementsfury/SuperElementSlot";
 import GoldenRelicsSlot from "./games/slots/goldenrelics/GoldenRelicsSlot";
 import ActivityScreen from "./pages/ActivityScreen";
 import PromotionScreen from "./pages/PromotionScreen";
+import PlinkoGame from "./games/plinko/PlinkoGame";
 import K3DiceGame from "./games/K3DiceGame/K3DiceGame";
 import NotificationsScreen from "./pages/NotificationsScreen";
 import { apiGetBalance, apiLogout, apiRefreshToken } from "./api";
@@ -88,6 +89,7 @@ export default function App() {
       {screen === "motoride" && <MotorideGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "roadrush" && <RoadRushGame balance={balance} setBalance={setBalance} onExit={() => setScreen("home")} />}
       {screen === "k3" && <K3DiceGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
+      {screen === "plinko" && <PlinkoGame balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots6" && <TombRaidersSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots7" && <SuperElementSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}
       {screen === "slots8" && <GoldenRelicsSlot balance={balance} setBalance={setBalance} onBack={() => setScreen("home")} />}

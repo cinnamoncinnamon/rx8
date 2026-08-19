@@ -130,3 +130,15 @@ export async function apiRedeemPromoCode(code) {
     body: JSON.stringify({ code }),
   });
 }
+
+// ── Plinko ──────────────────────────────────────────────────────────────────
+export async function apiPlinkoPlay({ betAmount, lines = 16 }) {
+  return request("/api/plinko/play", {
+    method: "POST",
+    body: JSON.stringify({ betAmount, lines }),
+  });
+}
+
+export async function apiPlinkoInfo() {
+  return request("/api/plinko/info");
+}
