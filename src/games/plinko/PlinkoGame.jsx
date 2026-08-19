@@ -13,6 +13,7 @@ import sfxBest from "./multiplier.wav";
 import sfxGood from "./multiplier-good.wav";
 import sfxLow from "./multiplier-low.wav";
 import sfxRegular from "./multiplier-regular.wav";
+
 const BET_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
 const LINES_OPTIONS = [8, 12, 16];
 
@@ -207,10 +208,9 @@ function createBoard(canvas, lines) {
         if (b.onDone) b.onDone(b.binIndex);
       }
     }
-    // purge finished
+    // remove finished balls immediately (no stuck dots)
     for (let i = balls.length - 1; i >= 0; i--) {
-      if (balls[i].done && balls[i].t >= 1.15) balls.splice(i, 1);
-      else if (balls[i].done) balls[i].t += 0.05;
+      if (balls[i].done) balls.splice(i, 1);
     }
     draw();
     raf = requestAnimationFrame(tick);
@@ -226,19 +226,29 @@ function createBoard(canvas, lines) {
     raf = 0;
   }
 
+  const MAX_BALLS = 10;
+
   function drop(binIndex, onDone) {
+    if (balls.filter((b) => !b.done).length >= MAX_BALLS) {
+      if (onDone) onDone(binIndex);
+      return false;
+    }
     const path = buildPath(lines, binIndex);
-    // ensure sum matches (buildPath already does)
     const pts = pathPoints(path);
     playSfx(sfxBall, 0.35);
     balls.push({
       pts,
       t: 0,
-      speed: 0.012 + Math.random() * 0.004, // duration ~1–1.2s
+      speed: 0.014 + Math.random() * 0.006,
       done: false,
       binIndex,
       onDone,
     });
+    return true;
+  }
+
+  function activeCount() {
+    return balls.filter((b) => !b.done).length;
   }
 
   function destroy() {
@@ -250,7 +260,7 @@ function createBoard(canvas, lines) {
     /* board is recreated by React when lines change */
   }
 
-  return { start, stop, drop, destroy, setLines, bins, lines };
+  return { start, stop, drop, destroy, setLines, bins, lines, activeCount };
 }
 
 export default function PlinkoGame({ balance, setBalance, onBack }) {
@@ -259,10 +269,12 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
 
   const [bet, setBet] = useState(10);
   const [lines, setLines] = useState(16);
-  const [busy, setBusy] = useState(false);
+  const [dropping, setDropping] = useState(false); // only blocks while API request runs
   const [lastWin, setLastWin] = useState(null);
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
+  const balanceRef = useRef(balance);
+  balanceRef.current = balance;
 
   // (re)build board when lines change
   useEffect(() => {
@@ -288,16 +300,21 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
         });
 
   async function handlePlay() {
-    if (busy) return;
+    // Allow many balls on screen; only skip if this click's request is in flight
+    // or too many active balls
+    if (dropping) return;
     setError("");
-    setLastWin(null);
 
-    if (bet > balance) {
+    if (bet > balanceRef.current) {
       setError("Insufficient balance");
       return;
     }
+    if ((boardRef.current?.activeCount?.() || 0) >= 10) {
+      setError("Too many balls — wait a moment");
+      return;
+    }
 
-    setBusy(true);
+    setDropping(true);
     try {
       const result = await apiPlinkoPlay({ betAmount: bet, lines });
       if (typeof result.balance === "number") setBalance(result.balance);
@@ -317,16 +334,12 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
       );
       playMultiplierSfx(result.multiplier);
 
-      // Animate to server bin — guaranteed finish
-      boardRef.current?.drop(binIndex, () => {
-        setBusy(false);
-      });
-
-      // safety unlock if animation callback missed
-      setTimeout(() => setBusy(false), 2500);
+      // Drop ball; more drops allowed while this one is still falling
+      boardRef.current?.drop(binIndex);
     } catch (err) {
       setError(err.message || "Play failed");
-      setBusy(false);
+    } finally {
+      setDropping(false);
     }
   }
 
@@ -380,7 +393,7 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
                 type="button"
                 className={bet === s ? "active" : ""}
                 onClick={() => setBet(s)}
-                disabled={busy}
+                disabled={dropping}
               >
                 {s}
               </button>
@@ -397,7 +410,7 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
                 type="button"
                 className={lines === n ? "active" : ""}
                 onClick={() => setLines(n)}
-                disabled={busy}
+                disabled={dropping}
               >
                 {n}
               </button>
@@ -409,9 +422,9 @@ export default function PlinkoGame({ balance, setBalance, onBack }) {
           type="button"
           className="plinko-play"
           onClick={handlePlay}
-          disabled={busy || bet > balance}
+          disabled={dropping || bet > balance}
         >
-          {busy ? "Dropping…" : `Drop ৳${bet}`}
+          {dropping ? "…" : `Drop ৳${bet}`}
         </button>
       </div>
 
