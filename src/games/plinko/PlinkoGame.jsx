@@ -1,442 +1,342 @@
 /**
- * Plinko — Spinova (fixed ball logic)
- * - Server decides binIndex / multiplier / balance (apiPlinkoPlay)
- * - Client only animates: path of L/R moves that MUST end in that bin
- * - No Matter.js → no stuck balls / endless bounce
+ * PlinkoGame — UI + flow matching the reference (ef32e795) game.
+ * Wired to spinova-backend /api/plinko/play (server path + ~96% RTP).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiPlinkoPlay } from "../../api";
+import PlinkoBoard from "./PlinkoBoard";
+import {
+  MULTIPLIERS,
+  RISKS,
+  ROWS,
+  BET_STEPS,
+  formatCurrency,
+  formatMultiplier,
+} from "./plinko";
 import "./PlinkoGame.css";
 
-import sfxBall from "./ball.wav";
-import sfxBest from "./multiplier.wav";
-import sfxGood from "./multiplier-good.wav";
-import sfxLow from "./multiplier-low.wav";
-import sfxRegular from "./multiplier-regular.wav";
-
-const BET_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
-const LINES_OPTIONS = [8, 12, 16];
-
-/** Display multipliers for 16 rows (must match backend medium table order) */
-const DISPLAY_MULTS_16 = [
-  110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110,
-];
-
-function multColor(m) {
-  if (m >= 40) return "#ff4d6d";
-  if (m >= 10) return "#ff9f1c";
-  if (m >= 2) return "#2ec4b6";
-  if (m >= 1) return "#7bdff2";
-  return "#6c757d";
-}
-
-function playSfx(src, volume = 0.45) {
-  try {
-    const a = new Audio(src);
-    a.volume = volume;
-    a.play().catch(() => {});
-  } catch {
-    /* ignore */
-  }
-}
-
-function playMultiplierSfx(mult) {
-  if (mult >= 40) playSfx(sfxBest, 0.55);
-  else if (mult >= 5) playSfx(sfxGood, 0.5);
-  else if (mult >= 1) playSfx(sfxRegular, 0.4);
-  else playSfx(sfxLow, 0.35);
-}
-
-/** Path of 0=left / 1=right with exactly `rights` rights in `steps` moves */
-function buildPath(steps, rights) {
-  const r = Math.max(0, Math.min(steps, rights | 0));
-  const path = Array(r).fill(1).concat(Array(steps - r).fill(0));
-  for (let i = path.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [path[i], path[j]] = [path[j], path[i]];
-  }
-  return path;
-}
-
-function easeInOut(t) {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
-
-/**
- * Canvas board: pins + animated balls that follow a fixed L/R path to target bin.
- */
-function createBoard(canvas, lines) {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const cssW = 390;
-  const cssH = 420;
-  canvas.width = cssW * dpr;
-  canvas.height = cssH * dpr;
-  canvas.style.width = cssW + "px";
-  canvas.style.height = cssH + "px";
-  const ctx = canvas.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const padX = 28;
-  const padTop = 28;
-  const padBottom = 36;
-  const pinR = 3.4;
-  const ballR = 6.5;
-
-  const pins = [];
-  const lastRowXs = [];
-  for (let row = 0; row < lines; row++) {
-    const pinsInRow = 3 + row;
-    const y = padTop + (row / Math.max(lines - 1, 1)) * (cssH - padTop - padBottom);
-    const rowPad = padX + ((lines - 1 - row) * ((cssW - padX * 2) / (lines + 2))) / 2;
-    for (let col = 0; col < pinsInRow; col++) {
-      const x =
-        rowPad +
-        (pinsInRow === 1
-          ? 0
-          : (col / (pinsInRow - 1)) * (cssW - rowPad * 2));
-      pins.push({ x, y, row, col });
-      if (row === lines - 1) lastRowXs.push(x);
-    }
-  }
-
-  const binCount = lines + 1;
-  const binW = lastRowXs.length > 1 ? lastRowXs[1] - lastRowXs[0] : (cssW - padX * 2) / binCount;
-  const bins = [];
-  for (let i = 0; i < binCount; i++) {
-    const x =
-      lastRowXs.length > 0
-        ? lastRowXs[0] + i * binW
-        : padX + binW * i + binW / 2;
-    bins.push({ x, y: cssH - 8, w: binW });
-  }
-
-  /** Positions along a path: start → between pins each row → bin */
-  function pathPoints(path) {
-    const pts = [{ x: cssW / 2, y: 8 }];
-    let slot = 0; // which gap we're in (0 .. row)
-    for (let row = 0; row < lines; row++) {
-      const dir = path[row] || 0;
-      slot += dir;
-      const pinsInRow = 3 + row;
-      // land near pin slot / (slot+1) gap center under this row
-      const rowPins = pins.filter((p) => p.row === row);
-      let x;
-      if (rowPins.length === 0) x = cssW / 2;
-      else if (slot <= 0) x = rowPins[0].x;
-      else if (slot >= rowPins.length) x = rowPins[rowPins.length - 1].x;
-      else {
-        // between pin[slot-1] and pin[slot]
-        x = (rowPins[slot - 1].x + rowPins[slot].x) / 2;
-      }
-      // slight noise for organic look (does not change final bin)
-      x += (Math.random() - 0.5) * 2.5;
-      const y = rowPins[0]?.y ?? padTop + row * 20;
-      pts.push({ x, y: y + pinR + 2 });
-    }
-    const bi = Math.min(bins.length - 1, Math.max(0, slot));
-    pts.push({ x: bins[bi].x, y: bins[bi].y - 4 });
-    return pts;
-  }
-
-  const balls = []; // { pts, t, speed, done, binIndex }
-  let raf = 0;
-  let hitPins = new Set();
-
-  function draw() {
-    ctx.clearRect(0, 0, cssW, cssH);
-
-    // pins
-    for (const p of pins) {
-      const glow = hitPins.has(`${p.row}-${p.col}`);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, pinR, 0, Math.PI * 2);
-      ctx.fillStyle = glow ? "#a78bfa" : "#e9d5ff";
-      ctx.fill();
-      if (glow) {
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = "#7c3aed";
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-    }
-
-    // balls
-    for (const b of balls) {
-      if (b.done) continue;
-      const n = b.pts.length - 1;
-      const f = Math.min(1, b.t);
-      const seg = f * n;
-      const i = Math.min(n - 1, Math.floor(seg));
-      const local = easeInOut(seg - i);
-      const a = b.pts[i];
-      const c = b.pts[i + 1];
-      const x = a.x + (c.x - a.x) * local;
-      const y = a.y + (c.y - a.y) * local;
-
-      // mark nearby pin hit for glow
-      for (const p of pins) {
-        if (Math.hypot(p.x - x, p.y - y) < pinR + ballR + 4) {
-          hitPins.add(`${p.row}-${p.col}`);
-        }
-      }
-
-      ctx.beginPath();
-      ctx.arc(x, y, ballR, 0, Math.PI * 2);
-      ctx.fillStyle = "#f472b6";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-  }
-
-  function tick() {
-    // decay pin glow
-    if (hitPins.size && Math.random() < 0.08) {
-      const arr = [...hitPins];
-      hitPins.delete(arr[0]);
-    }
-
-    let any = false;
-    for (const b of balls) {
-      if (b.done) continue;
-      any = true;
-      b.t += b.speed;
-      if (b.t >= 1) {
-        b.t = 1;
-        b.done = true;
-        if (b.onDone) b.onDone(b.binIndex);
-      }
-    }
-    // remove finished balls immediately (no stuck dots)
-    for (let i = balls.length - 1; i >= 0; i--) {
-      if (balls[i].done) balls.splice(i, 1);
-    }
-    draw();
-    raf = requestAnimationFrame(tick);
-  }
-
-  function start() {
-    stop();
-    raf = requestAnimationFrame(tick);
-  }
-
-  function stop() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = 0;
-  }
-
-  const MAX_BALLS = 10;
-
-  function drop(binIndex, onDone) {
-    if (balls.filter((b) => !b.done).length >= MAX_BALLS) {
-      if (onDone) onDone(binIndex);
-      return false;
-    }
-    const path = buildPath(lines, binIndex);
-    const pts = pathPoints(path);
-    playSfx(sfxBall, 0.35);
-    balls.push({
-      pts,
-      t: 0,
-      speed: 0.014 + Math.random() * 0.006,
-      done: false,
-      binIndex,
-      onDone,
-    });
-    return true;
-  }
-
-  function activeCount() {
-    return balls.filter((b) => !b.done).length;
-  }
-
-  function destroy() {
-    stop();
-    balls.length = 0;
-  }
-
-  function setLines() {
-    /* board is recreated by React when lines change */
-  }
-
-  return { start, stop, drop, destroy, setLines, bins, lines, activeCount };
-}
+const LAND_DELAY = 130 + ROWS * 92 + 190; // matches board timing
 
 export default function PlinkoGame({ balance, setBalance, onBack }) {
-  const canvasRef = useRef(null);
   const boardRef = useRef(null);
 
   const [bet, setBet] = useState(10);
-  const [lines, setLines] = useState(16);
-  const [dropping, setDropping] = useState(false); // only blocks while API request runs
-  const [lastWin, setLastWin] = useState(null);
+  const [risk, setRisk] = useState("medium");
+  const [ballsPerDrop, setBallsPerDrop] = useState(1);
   const [history, setHistory] = useState([]);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("manual");
+
+  // auto
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoBets, setAutoBets] = useState(25);
+  const [autoSpeed, setAutoSpeed] = useState(350);
+  const [autoLeft, setAutoLeft] = useState(0);
+  const [session, setSession] = useState({ wagered: 0, returned: 0 });
+
   const balanceRef = useRef(balance);
   balanceRef.current = balance;
 
-  // (re)build board when lines change
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    boardRef.current?.destroy();
-    const board = createBoard(canvas, lines);
-    boardRef.current = board;
-    board.start();
-    return () => board.destroy();
-  }, [lines]);
+  const table = MULTIPLIERS[risk];
+  const profit = session.returned - session.wagered;
 
-  const mults =
-    lines === 16
-      ? DISPLAY_MULTS_16
-      : Array.from({ length: lines + 1 }, (_, i) => {
-          const t = Math.abs(i - lines / 2) / (lines / 2 || 1);
-          if (t > 0.9) return 40;
-          if (t > 0.7) return 10;
-          if (t > 0.5) return 3;
-          if (t > 0.3) return 1.5;
-          return 0.5;
+  const play = useCallback(
+    async (count) => {
+      const amount = bet;
+      const cost = amount * count;
+      if (cost > balanceRef.current) {
+        setError("Insufficient balance");
+        return false;
+      }
+      setError("");
+      setBusy(true);
+
+      try {
+        const res = await apiPlinkoPlay({
+          betAmount: amount,
+          risk,
+          balls: count,
         });
 
-  async function handlePlay() {
-    // Allow many balls on screen; only skip if this click's request is in flight
-    // or too many active balls
-    if (dropping) return;
-    setError("");
+        if (typeof res.balance === "number") {
+          // optimistically deduct; credits applied as balls land
+          setBalance(res.balance);
+        }
 
-    if (bet > balanceRef.current) {
-      setError("Insufficient balance");
-      return;
-    }
-    if ((boardRef.current?.activeCount?.() || 0) >= 10) {
-      setError("Too many balls — wait a moment");
-      return;
-    }
+        const results = res.results || [];
+        // If API returned single-result legacy shape, normalize
+        const list =
+          results.length > 0
+            ? results
+            : res.binIndex != null
+              ? [
+                  {
+                    path: res.path,
+                    binIndex: res.binIndex,
+                    multiplier: res.multiplier,
+                    winAmount: res.winAmount,
+                    betAmount: amount,
+                    roundId: res.roundId,
+                  },
+                ]
+              : [];
 
-    setDropping(true);
-    try {
-      const result = await apiPlinkoPlay({ betAmount: bet, lines });
-      if (typeof result.balance === "number") setBalance(result.balance);
+        // Apply session wager
+        setSession((s) => ({ ...s, wagered: s.wagered + amount * list.length }));
 
-      const binIndex = Math.max(
-        0,
-        Math.min(lines, Number(result.binIndex) || 0)
-      );
+        list.forEach((r, i) => {
+          const dropResult = {
+            path: r.path,
+            binIndex: r.binIndex,
+            bucket: r.binIndex,
+            multiplier: r.multiplier,
+          };
+          window.setTimeout(() => boardRef.current?.drop(dropResult), i * 110);
+          window.setTimeout(() => {
+            const payout = Number(r.winAmount) || 0;
+            setSession((s) => ({ ...s, returned: s.returned + payout }));
+            setHistory((h) =>
+              [
+                {
+                  id: r.roundId || `${Date.now()}-${i}`,
+                  multiplier: r.multiplier,
+                  payout,
+                  bet: amount,
+                },
+                ...h,
+              ].slice(0, 12)
+            );
+          }, i * 110 + LAND_DELAY);
+        });
 
-      setLastWin({
-        multiplier: result.multiplier,
-        winAmount: result.winAmount,
-        binIndex,
-      });
-      setHistory((h) =>
-        [{ mult: result.multiplier, win: result.winAmount }, ...h].slice(0, 12)
-      );
-      playMultiplierSfx(result.multiplier);
+        // Final balance from server (already includes all wins)
+        if (typeof res.balance === "number") {
+          window.setTimeout(() => setBalance(res.balance), list.length * 110 + LAND_DELAY);
+        }
 
-      // Drop ball; more drops allowed while this one is still falling
-      boardRef.current?.drop(binIndex);
-    } catch (err) {
-      setError(err.message || "Play failed");
-    } finally {
-      setDropping(false);
-    }
-  }
+        return true;
+      } catch (e) {
+        setError(e?.message || "Drop failed");
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [bet, risk, setBalance]
+  );
+
+  const handleManual = async () => {
+    if (busy || autoRunning) return;
+    await play(ballsPerDrop);
+  };
+
+  // auto loop
+  useEffect(() => {
+    if (!autoRunning) return;
+    let cancelled = false;
+    let left = autoLeft;
+    const interval = Math.max(80, Number(autoSpeed) || 350);
+
+    const tick = async () => {
+      if (cancelled) return;
+      if (left <= 0) {
+        setAutoRunning(false);
+        return;
+      }
+      const ok = await play(ballsPerDrop);
+      if (!ok) {
+        setAutoRunning(false);
+        return;
+      }
+      left -= 1;
+      setAutoLeft(left);
+      if (!cancelled) window.setTimeout(tick, interval);
+    };
+    const id = window.setTimeout(tick, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunning]);
+
+  const startAuto = () => {
+    const n = Math.max(1, Math.floor(Number(autoBets) || 0));
+    setAutoLeft(n);
+    setAutoRunning(true);
+  };
 
   return (
     <div className="plinko-root">
       <div className="plinko-topbar">
         <button type="button" className="plinko-back" onClick={onBack}>
-          ← Back
+          ←
         </button>
         <div className="plinko-title">Plinko</div>
-        <div className="plinko-balance">৳{Number(balance).toFixed(2)}</div>
+        <div className="plinko-balance">{formatCurrency(balance)}</div>
       </div>
 
-      <div className="plinko-board-wrap">
-        <canvas ref={canvasRef} className="plinko-canvas" />
-        <div className="plinko-bins">
-          {mults.map((m, i) => (
-            <div
-              key={i}
-              className="plinko-bin"
-              style={{
-                background: multColor(m),
-                opacity: lastWin?.binIndex === i ? 1 : 0.85,
-                transform: lastWin?.binIndex === i ? "scale(1.08)" : "scale(1)",
-              }}
+      <div className="plinko-layout">
+        {/* Controls */}
+        <section className="plinko-panel">
+          <div className="plinko-tabs">
+            <button
+              type="button"
+              className={tab === "manual" ? "active" : ""}
+              onClick={() => setTab("manual")}
             >
-              {m}x
+              Manual
+            </button>
+            <button
+              type="button"
+              className={tab === "auto" ? "active" : ""}
+              onClick={() => setTab("auto")}
+            >
+              Auto
+            </button>
+          </div>
+
+          <label className="plinko-field">
+            <span>Bet amount</span>
+            <div className="plinko-bet-row">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={bet}
+                onChange={(e) => setBet(Math.max(1, Number(e.target.value) || 1))}
+                disabled={busy || autoRunning}
+              />
+              <div className="plinko-steps">
+                {BET_STEPS.filter((s) => s <= 500).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={bet === s ? "active" : ""}
+                    onClick={() => setBet(s)}
+                    disabled={busy || autoRunning}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </label>
 
-      {lastWin && (
-        <div
-          className={`plinko-result ${lastWin.winAmount > 0 ? "win" : "lose"}`}
-        >
-          {lastWin.winAmount > 0
-            ? `+৳${Number(lastWin.winAmount).toFixed(2)} (${lastWin.multiplier}x)`
-            : `No win (${lastWin.multiplier}x)`}
-        </div>
-      )}
-      {error && <div className="plinko-error">{error}</div>}
+          <label className="plinko-field">
+            <span>Risk</span>
+            <div className="plinko-risk">
+              {RISKS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={risk === r ? `active risk-${r}` : `risk-${r}`}
+                  onClick={() => setRisk(r)}
+                  disabled={busy || autoRunning}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </label>
 
-      <div className="plinko-controls">
-        <div className="plinko-row">
-          <span className="plinko-label">Bet</span>
-          <div className="plinko-steps">
-            {BET_STEPS.filter((s) => s <= 500).map((s) => (
+          <label className="plinko-field">
+            <span>Balls per drop</span>
+            <div className="plinko-steps">
+              {[1, 2, 3, 5, 10].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={ballsPerDrop === n ? "active" : ""}
+                  onClick={() => setBallsPerDrop(n)}
+                  disabled={busy || autoRunning}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          {tab === "manual" ? (
+            <button
+              type="button"
+              className="plinko-play"
+              onClick={handleManual}
+              disabled={busy || autoRunning || bet * ballsPerDrop > balance}
+            >
+              {busy ? "…" : `Drop ${ballsPerDrop > 1 ? `${ballsPerDrop}× ` : ""}৳${bet}`}
+            </button>
+          ) : (
+            <div className="plinko-auto">
+              <div className="plinko-auto-row">
+                <label>
+                  <span>Number of bets</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={autoBets}
+                    onChange={(e) => setAutoBets(e.target.value)}
+                    disabled={autoRunning}
+                  />
+                </label>
+                <label>
+                  <span>Speed (ms)</span>
+                  <input
+                    type="number"
+                    min={80}
+                    value={autoSpeed}
+                    onChange={(e) => setAutoSpeed(e.target.value)}
+                    disabled={autoRunning}
+                  />
+                </label>
+              </div>
               <button
-                key={s}
                 type="button"
-                className={bet === s ? "active" : ""}
-                onClick={() => setBet(s)}
-                disabled={dropping}
+                className={`plinko-play ${autoRunning ? "stop" : ""}`}
+                onClick={() => (autoRunning ? setAutoRunning(false) : startAuto())}
               >
-                {s}
+                {autoRunning ? `Stop auto (${autoLeft} left)` : "Start auto"}
               </button>
+            </div>
+          )}
+
+          {error && <div className="plinko-error">{error}</div>}
+
+          <dl className="plinko-session">
+            <div>
+              <dt>Session profit</dt>
+              <dd className={profit >= 0 ? "win" : "lose"}>
+                {profit >= 0 ? "+" : "−"}
+                {formatCurrency(Math.abs(profit)).replace("৳", "৳")}
+              </dd>
+            </div>
+            <div>
+              <dt>Wagered</dt>
+              <dd>{formatCurrency(session.wagered)}</dd>
+            </div>
+            <div>
+              <dt>RTP</dt>
+              <dd>~96%</dd>
+            </div>
+          </dl>
+        </section>
+
+        {/* Board */}
+        <section className="plinko-board-section">
+          <div className="plinko-history">
+            {history.map((h) => (
+              <span key={h.id} className="plinko-hist-chip">
+                {formatMultiplier(h.multiplier)}
+              </span>
             ))}
           </div>
-        </div>
-
-        <div className="plinko-row">
-          <span className="plinko-label">Lines</span>
-          <div className="plinko-steps">
-            {LINES_OPTIONS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={lines === n ? "active" : ""}
-                onClick={() => setLines(n)}
-                disabled={dropping}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="plinko-play"
-          onClick={handlePlay}
-          disabled={dropping || bet > balance}
-        >
-          {dropping ? "…" : `Drop ৳${bet}`}
-        </button>
+          <PlinkoBoard ref={boardRef} risk={risk} />
+          <p className="plinko-fair">
+            Server-authoritative · 16 rows · risk <strong>{risk}</strong> · house edge ~4%
+          </p>
+        </section>
       </div>
-
-      {history.length > 0 && (
-        <div className="plinko-history">
-          {history.map((h, i) => (
-            <span key={i} style={{ color: multColor(h.mult) }}>
-              {h.mult}x
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
