@@ -1,22 +1,24 @@
 /**
- * PlinkoBoard — exact animation from the reference (ef32e795) game.
- * Server supplies path[] + bucket; client only draws.
+ * Server path animation — slower, clearer, mobile-scaled.
+ * Server supplies path[] + binIndex; client only draws.
  */
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { MULTIPLIERS, ROWS, bucketHeat, formatMultiplier } from "./plinko";
+import { playPeg, playLand } from "./sound";
 
-const W = 700;
-const SX = 34;
-const SY = 33;
-const TOP = 74;
+const W = 390;
+const SX = 22;
+const SY = 24;
+const TOP = 36;
 const CX = W / 2;
-const BUCKET_Y = TOP + ROWS * SY + 26;
-const BUCKET_H = 34;
-const H = BUCKET_Y + BUCKET_H + 16;
+const BUCKET_Y = TOP + ROWS * SY + 18;
+const BUCKET_H = 28;
+const H = BUCKET_Y + BUCKET_H + 10;
 
-const ROW_MS = 92;
-const DROP_MS = 130;
-const SETTLE_MS = 190;
+/* Slower than reference so path is readable */
+const ROW_MS = 130;
+const DROP_MS = 180;
+const SETTLE_MS = 260;
 
 const ballX = (k, r) => CX + (k - r / 2) * SX;
 const rowY = (r) => TOP + r * SY;
@@ -29,17 +31,21 @@ function bucketColor(i, alpha = 1) {
   return `oklch(${l} ${c} ${h} / ${alpha})`;
 }
 
-export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, ref) {
+export const LAND_MS = DROP_MS + ROWS * ROW_MS + SETTLE_MS;
+
+export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium", onBallDone }, ref) {
   const canvasRef = useRef(null);
   const ballsRef = useRef([]);
   const hitsRef = useRef(new Array(ROWS + 1).fill(-99999));
   const pegHitsRef = useRef(new Map());
   const riskRef = useRef(risk);
   riskRef.current = risk;
+  const onDoneRef = useRef(onBallDone);
+  onDoneRef.current = onBallDone;
 
   useImperativeHandle(ref, () => ({
     drop: (result) => {
-      ballsRef.current.push({ result, start: performance.now(), landed: false });
+      ballsRef.current.push({ result, start: performance.now(), landed: false, doneCb: false });
     },
     activeCount: () => ballsRef.current.length,
   }));
@@ -55,6 +61,7 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
       canvas.width = W * dpr;
       canvas.height = H * dpr;
       canvas.style.width = "100%";
+      canvas.style.maxWidth = "100%";
       canvas.style.height = "auto";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
@@ -63,13 +70,6 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
 
     const draw = (now) => {
       ctx.clearRect(0, 0, W, H);
-
-      // background glow
-      const bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, "oklch(0.18 0.04 280 / 0.0)");
-      bg.addColorStop(1, "oklch(0.16 0.05 280 / 0.35)");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
 
       const table = MULTIPLIERS[riskRef.current] || MULTIPLIERS.medium;
 
@@ -81,19 +81,16 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
           const key = `${r}:${j}`;
           const hitAt = pegHitsRef.current.get(key) || -99999;
           const age = now - hitAt;
-          const glow = age >= 0 && age < 220;
+          const glow = age >= 0 && age < 240;
 
           ctx.beginPath();
-          ctx.arc(x, y, glow ? 4.2 : 3.4, 0, Math.PI * 2);
-          ctx.fillStyle = glow
-            ? "oklch(0.88 0.14 85)"
-            : "oklch(0.78 0.06 280)";
+          ctx.arc(x, y, glow ? 3.6 : 2.8, 0, Math.PI * 2);
+          ctx.fillStyle = glow ? "oklch(0.88 0.14 85)" : "oklch(0.82 0.05 280)";
           ctx.fill();
-
           if (glow) {
             ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fillStyle = `oklch(0.8 0.18 85 / ${Math.max(0, 1 - age / 220) * 0.35})`;
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fillStyle = `oklch(0.8 0.18 85 / ${Math.max(0, 1 - age / 240) * 0.3})`;
             ctx.fill();
           }
         }
@@ -103,21 +100,23 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
       for (let i = 0; i <= ROWS; i++) {
         const x = ballX(i, ROWS);
         const age = now - (hitsRef.current[i] || -99999);
-        const bump = age >= 0 && age < 280 ? 1 + Math.sin((age / 280) * Math.PI) * 0.12 : 1;
-        const w = SX * 0.88 * bump;
+        const bump = age >= 0 && age < 300 ? 1 + Math.sin((age / 300) * Math.PI) * 0.1 : 1;
+        const w = SX * 0.9 * bump;
         const h = BUCKET_H * bump;
         const y = BUCKET_Y + (BUCKET_H - h) / 2;
 
         ctx.beginPath();
-        ctx.roundRect(x - w / 2, y, w, h, 6);
-        ctx.fillStyle = bucketColor(i, age >= 0 && age < 280 ? 1 : 0.88);
+        if (ctx.roundRect) ctx.roundRect(x - w / 2, y, w, h, 5);
+        else ctx.rect(x - w / 2, y, w, h);
+        ctx.fillStyle = bucketColor(i, age >= 0 && age < 300 ? 1 : 0.9);
         ctx.fill();
 
-        ctx.fillStyle = "oklch(0.15 0.03 280)";
-        ctx.font = `bold ${Math.max(9, 11 - (String(table[i]).length > 4 ? 1 : 0))}px system-ui, sans-serif`;
+        ctx.fillStyle = "oklch(0.12 0.03 280)";
+        ctx.font = `bold 9px system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(formatMultiplier(table[i]).replace("x", ""), x, y + h / 2);
+        const label = formatMultiplier(table[i]).replace("x", "");
+        ctx.fillText(label, x, y + h / 2);
       }
 
       // balls
@@ -130,7 +129,7 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
         if (t < DROP_MS) {
           const p = t / DROP_MS;
           x = CX;
-          const from = TOP - SY * 1.4;
+          const from = TOP - SY * 1.2;
           y = from + (rowY(0) - from) * p;
         } else {
           const rt = (t - DROP_MS) / ROW_MS;
@@ -142,14 +141,19 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
             const from = rowY(ROWS);
             const to = BUCKET_Y + BUCKET_H / 2;
             y = from + (to - from) * (1 - Math.pow(1 - st, 2));
-            if (!ball.landed && st >= 0.45) {
+            if (!ball.landed && st >= 0.4) {
               ball.landed = true;
               hitsRef.current[k] = now;
+              playLand(ball.result.multiplier ?? 0);
+              if (!ball.doneCb) {
+                ball.doneCb = true;
+                onDoneRef.current?.(ball.result);
+              }
             }
             if (st >= 1) continue;
           } else {
             const p = rt - r;
-            const path = ball.result.path;
+            const path = ball.result.path || [];
             const kFrom = path.slice(0, r).reduce((a, b) => a + b, 0);
             const dir = path[r] ?? 0;
             const kTo = kFrom + dir;
@@ -159,32 +163,34 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
             const y1 = rowY(r + 1);
             const ease = p * p * (3 - 2 * p);
             x = x0 + (x1 - x0) * ease;
-            y = y0 + (y1 - y0) * (p * p * 0.75 + p * 0.25) - Math.sin(Math.PI * p) * 6;
-            if (p < 0.08 && r >= 1) {
-              const j = kFrom + (dir === 1 ? 0 : 1);
-              pegHitsRef.current.set(`${r}:${j}`, now);
+            y = y0 + (y1 - y0) * (p * p * 0.75 + p * 0.25) - Math.sin(Math.PI * p) * 5;
+            if (p < 0.1 && r >= 0) {
+              const j = kFrom + (dir === 1 ? 0 : Math.min(1, kFrom));
+              const key = `${r}:${Math.min(r, Math.max(0, j))}`;
+              if (!pegHitsRef.current.has(key) || now - pegHitsRef.current.get(key) > 80) {
+                pegHitsRef.current.set(key, now);
+                playPeg();
+              }
             }
           }
         }
 
-        // soft halo
         ctx.beginPath();
-        ctx.arc(x, y, 12, 0, Math.PI * 2);
-        ctx.fillStyle = "oklch(0.85 0.16 84 / 0.18)";
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = "oklch(0.85 0.16 84 / 0.2)";
         ctx.fill();
 
-        const grad = ctx.createRadialGradient(x - 3, y - 4, 1, x, y, 8);
+        const grad = ctx.createRadialGradient(x - 2, y - 3, 1, x, y, 7);
         grad.addColorStop(0, "oklch(0.97 0.08 96)");
         grad.addColorStop(1, "oklch(0.72 0.17 62)");
         ctx.beginPath();
-        ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+        ctx.arc(x, y, 6.5, 0, Math.PI * 2);
         ctx.fillStyle = grad;
         ctx.fill();
 
         next.push(ball);
       }
       ballsRef.current = next;
-
       raf = requestAnimationFrame(draw);
     };
 
@@ -200,7 +206,7 @@ export const PlinkoBoard = forwardRef(function PlinkoBoard({ risk = "medium" }, 
       ref={canvasRef}
       aria-label="Plinko board"
       className="plinko-canvas"
-      style={{ width: "100%", maxWidth: 700, aspectRatio: `${W} / ${H}`, display: "block" }}
+      style={{ width: "100%", aspectRatio: `${W} / ${H}`, display: "block" }}
     />
   );
 });

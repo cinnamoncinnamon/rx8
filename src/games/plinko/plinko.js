@@ -1,5 +1,4 @@
-/** Shared Plinko constants — must match backend MULTIPLIERS (96% RTP tables). */
-
+/** Shared constants — must match backend MULTIPLIERS (~96% RTP). */
 export const ROWS = 16;
 export const BUCKETS = ROWS + 1;
 
@@ -21,16 +20,21 @@ export const MULTIPLIERS = {
 export const RISKS = ["low", "medium", "high"];
 export const BET_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
 
-/** 0 = centre (cold), 1 = edge (hot) */
 export function bucketHeat(index) {
   const mid = (BUCKETS - 1) / 2;
   return Math.abs(index - mid) / mid;
 }
 
+/** Clean labels for players (payout still uses exact server value). */
 export function formatMultiplier(m) {
   if (m >= 100) return `${Math.round(m)}x`;
-  if (m % 1 === 0) return `${m}x`;
-  return `${Number(m).toFixed(m < 1 ? 2 : 1)}x`;
+  if (m >= 10) return `${Math.round(m)}x`;
+  if (m >= 1) {
+    const r = Math.round(m * 10) / 10;
+    return `${r % 1 === 0 ? r.toFixed(0) : r}x`;
+  }
+  const r = Math.round(m * 10) / 10;
+  return `${r}x`;
 }
 
 export function formatCurrency(v) {
